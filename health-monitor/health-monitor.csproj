@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>health-monitor</RootNamespace>
+        <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
+        <WasmEnableSIMD>true</WasmEnableSIMD>
+        <WasmEnableExceptionHandling>false</WasmEnableExceptionHandling>
+        <EmccInitialHeapSize>16384000</EmccInitialHeapSize>
+        <EmccMaximumHeapSize>163840000</EmccMaximumHeapSize>
+        <BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>
+        <RunAOTCompilation>true</RunAOTCompilation>
+        <PublishTrimmed>false</PublishTrimmed>
+        <TrimMode>full</TrimMode>
+        <WasmBuildNative>true</WasmBuildNative>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <InvariantTimezone>true</InvariantTimezone>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\health-monitor.Client\health-monitor.Client.csproj"/>
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.0-preview.4.25258.110"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="wwwroot\lib\" />
+    </ItemGroup>
+
+</Project>

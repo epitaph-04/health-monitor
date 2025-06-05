@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0f172a; /* bg-slate-900 */
+    color: #f1f5f9; /* text-slate-100 */
+}
+/* Custom scrollbar for card history (optional) */
+.history-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.history-scroll::-webkit-scrollbar-track {
+    background: #334155; /* bg-slate-700 */
+    border-radius: 3px;
+}
+.history-scroll::-webkit-scrollbar-thumb {
+    background: #64748b; /* bg-slate-500 */
+    border-radius: 3px;
+}
+.history-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* bg-slate-400 */
+}
+/* Ensure icons are vertically aligned with text */
+.icon-text-align {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle; /* Helps with alignment in some contexts */
+}

@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "health-monitor", "health-monitor\health-monitor.csproj", "{91CFCA96-553B-42FB-9DF6-6C334E7F579F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "health-monitor.Client", "health-monitor.Client\health-monitor.Client.csproj", "{96C15BAA-4147-4B44-A24C-B7D5B7ADE338}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution", "Solution", "{09FAE936-0C1B-4093-80B2-D4DA4943A1B0}"
+	ProjectSection(SolutionItems) = preProject
+		tailwindcss = tailwindcss
+		card.html = card.html
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{91CFCA96-553B-42FB-9DF6-6C334E7F579F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91CFCA96-553B-42FB-9DF6-6C334E7F579F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91CFCA96-553B-42FB-9DF6-6C334E7F579F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91CFCA96-553B-42FB-9DF6-6C334E7F579F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96C15BAA-4147-4B44-A24C-B7D5B7ADE338}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96C15BAA-4147-4B44-A24C-B7D5B7ADE338}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96C15BAA-4147-4B44-A24C-B7D5B7ADE338}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96C15BAA-4147-4B44-A24C-B7D5B7ADE338}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
