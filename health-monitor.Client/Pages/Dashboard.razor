@@ -1,0 +1,141 @@
+@page "/"
+@using health_monitor.Client.Model
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.AspNetCore.Components
+@implements IAsyncDisposable
+@inject NavigationManager NavigationManager
+@inject HttpClient client
+
+<PageTitle>Dashboard</PageTitle>
+
+@if (_services == null)
+{
+    <div class="flex items-center justify-center h-64">
+        <div class="animate-pulse text-slate-400">
+            Loading services...
+        </div>
+    </div>
+}
+else
+{
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-100 mb-2">Service Dashboard</h1>
+        <p class="text-slate-400">Overview of all monitored services</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        @foreach (var service in _services)
+        {
+            var statusStyle = GetStatusStyle(service.LastCheckStatus.Status);
+            <div class="service-card rounded-lg shadow-lg overflow-hidden border flex flex-col @statusStyle.bg @statusStyle.border">
+                <div class="p-4 sm:p-5 flex-grow">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center min-w-0">
+                            @statusStyle.icon
+                            <h3 class="ml-2 text-base sm:text-lg font-semibold @statusStyle.text truncate" title="@service.Name">@service.Name</h3>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusStyle.bgColor/20 @statusStyle.text">
+                            @service.ServiceType
+                        </span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between text-sm mb-1">
+                            <span class="text-slate-400">Status</span>
+                            <span class="font-medium @statusStyle.text">@service.LastCheckStatus.Status</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-1.5 mb-2">
+                            <div class="h-1.5 rounded-full @statusStyle.bgColor" style="width: @(service.LastCheckStatus.Status == Status.Healthy ? "100%" : service.LastCheckStatus.Status == Status.Degraded ? "60%" : "20%")"></div>
+                        </div>
+                        <p class="text-xs text-slate-400 truncate" title="@service.LastCheckStatus.StatusMsg">@service.LastCheckStatus.StatusMsg</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <div class="text-slate-400 text-xs">Response Time</div>
+                            <div class="font-medium text-slate-200">@($"{service.LastCheckStatus.ResponseTime}ms")</div>
+                        </div>
+                        <div>
+                            <div class="text-slate-400 text-xs">Last Check</div>
+                            <div class="text-slate-300">@service.LastCheckStatus.CheckTime.ToString("HH:mm:ss")</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-4 sm:px-5 py-3 bg-slate-800/50 border-t border-slate-700">
+                    <a href="@service.Url" target="_blank" class="text-xs text-slate-400 hover:text-purple-400 transition-colors truncate block" title="@service.Url">
+                        @service.Url
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+}
+@code {
+    private Service[]? _services;
+    private HubConnection? _hubConnection;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var data = await client.GetFromJsonAsync<Service[]>(NavigationManager.ToAbsoluteUri("/data"));
+        _services = data;
+        await InitializeHubAsync();
+    }
+
+    private async Task InitializeHubAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/notification"))
+            .Build();
+            
+        _hubConnection.On<Service[]>("ReceiveNotification", services =>
+        {
+            _services = services;
+            InvokeAsync(StateHasChanged);
+        });
+        
+        await _hubConnection.StartAsync();
+    }
+    
+    private (string bg, string border, string text, string bgColor, MarkupString icon) GetStatusStyle(Status status)
+    {
+        return status switch
+        {
+            Status.Healthy => (
+                "bg-green-500/10", 
+                "border-green-500/30", 
+                "text-green-400",
+                "bg-green-500",
+                new MarkupString("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon-text-align text-green-500\"><path d=\"M22 11.08V12a10 10 0 1 1-5.93-9.14\"></path><polyline points=\"22 4 12 14.01 9 11.01\"></polyline></svg>")
+            ),
+            Status.Degraded => (
+                "bg-orange-500/10", 
+                "border-orange-500/30", 
+                "text-orange-400",
+                "bg-orange-500",
+                new MarkupString("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon-text-align text-orange-500\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z\"></path><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"></line><line x1=\"12\" y1=\"17\" x2=\"12.01\" y2=\"17\"></line></svg>")
+            ),
+            Status.Critical => (
+                "bg-red-500/10", 
+                "border-red-500/30", 
+                "text-red-400",
+                "bg-red-500",
+                new MarkupString("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon-text-align text-red-500\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><line x1=\"15\" y1=\"9\" x2=\"9\" y2=\"15\"></line><line x1=\"9\" y1=\"9\" x2=\"15\" y2=\"15\"></line></svg>")
+            ),
+            _ => (
+                "bg-gray-500/10", 
+                "border-gray-500/30", 
+                "text-gray-400",
+                "bg-gray-500",
+                new MarkupString("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon-text-align text-gray-500\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"></line><line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"></line></svg>")
+            )
+        };
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

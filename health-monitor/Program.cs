@@ -11,7 +11,9 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddCors();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<StatusService>();
 builder.Services.AddHostedService<HealthCheckService>();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
@@ -27,6 +29,7 @@ else
 app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 app.UseAntiforgery();
 app.MapHub<NotificationHub>("notification");
+app.MapGet("/data", (StatusService statusService) => Results.Ok(statusService.GetServices()));
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()

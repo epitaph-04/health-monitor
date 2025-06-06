@@ -2,6 +2,8 @@
 @using health_monitor.Client.Model
 @using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
+@inject NavigationManager NavigationManager
+@inject HttpClient client
 
 <PageTitle>Status Board</PageTitle>
 
@@ -145,12 +147,23 @@ else
     
     protected override async Task OnInitializedAsync()
     {
-        _hubConnection = new HubConnectionBuilder().WithUrl("http://localhost:5000/notification").Build();
-        _hubConnection.On<Service[]>("ReceiveNotification", svc =>
+        var data = await client.GetFromJsonAsync<Service[]>(NavigationManager.ToAbsoluteUri("/data"));
+        _services = data;
+        await InitializeHubAsync();
+    }
+
+    private async Task InitializeHubAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/notification"))
+            .Build();
+            
+        _hubConnection.On<Service[]>("ReceiveNotification", services =>
         {
-            _services = svc;
+            _services = services;
             InvokeAsync(StateHasChanged);
         });
+        
         await _hubConnection.StartAsync();
     }
 
