@@ -6,13 +6,34 @@
 @inject NavigationManager NavigationManager
 @inject HttpClient client
 
-<PageTitle>Dashboard</PageTitle>
+<PageTitle>HealthPulse</PageTitle>
+
+<style>
+    .icon-text-align {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+    }
+    .service-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .service-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+</style>
 
 @if (_services == null)
 {
     <div class="flex items-center justify-center h-64">
         <div class="animate-pulse text-slate-400">
-            Loading services...
+            <div class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Loading services...</span>
+            </div>
         </div>
     </div>
 }
@@ -23,46 +44,123 @@ else
         <p class="text-slate-400">Overview of all monitored services</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 h-full">
         @foreach (var service in _services)
         {
             var statusStyle = GetStatusStyle(service.LastCheckStatus.Status);
-            <div class="service-card rounded-lg shadow-lg overflow-hidden border flex flex-col @statusStyle.bg @statusStyle.border">
-                <div class="p-4 sm:p-5 flex-grow">
+            <div class="service-card rounded-lg shadow-lg overflow-hidden border flex flex-col h-full @statusStyle.bg @statusStyle.border">
+                <div class="p-4 sm:p-5 flex flex-col h-full">
                     <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center min-w-0">
+                        <div class="flex items-center min-w-0 flex-1">
                             @statusStyle.icon
                             <h3 class="ml-2 text-base sm:text-lg font-semibold @statusStyle.text truncate" title="@service.Name">@service.Name</h3>
                         </div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @statusStyle.bgColor/20 @statusStyle.text">
-                            @service.ServiceType
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium @statusStyle.bgColor @statusStyle.text whitespace-nowrap ml-2">
+                            @service.LastCheckStatus.Status
                         </span>
                     </div>
-                    
-                    <div class="mb-4">
-                        <div class="flex items-center justify-between text-sm mb-1">
-                            <span class="text-slate-400">Status</span>
-                            <span class="font-medium @statusStyle.text">@service.LastCheckStatus.Status</span>
-                        </div>
-                        <div class="w-full bg-slate-700 rounded-full h-1.5 mb-2">
-                            <div class="h-1.5 rounded-full @statusStyle.bgColor" style="width: @(service.LastCheckStatus.Status == Status.Healthy ? "100%" : service.LastCheckStatus.Status == Status.Degraded ? "60%" : "20%")"></div>
-                        </div>
-                        <p class="text-xs text-slate-400 truncate" title="@service.LastCheckStatus.StatusMsg">@service.LastCheckStatus.StatusMsg</p>
-                    </div>
+                    <p class="text-xs text-slate-400 mb-4 truncate">@service.ServiceType</p>
 
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <div class="text-slate-400 text-xs">Response Time</div>
-                            <div class="font-medium text-slate-200">@($"{service.LastCheckStatus.ResponseTime}ms")</div>
+                    <div class="space-y-2 flex-1">
+                        <div class="flex items-center text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-slate-400 flex-shrink-0">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span class="text-slate-300 truncate">@(service.LastCheckStatus?.ResponseTime)ms response</span>
                         </div>
-                        <div>
-                            <div class="text-slate-400 text-xs">Last Check</div>
-                            <div class="text-slate-300">@service.LastCheckStatus.CheckTime.ToString("HH:mm:ss")</div>
+                        <div class="flex items-center text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-slate-400 flex-shrink-0">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            <span class="text-slate-400 truncate">@service.LastCheckStatus?.CheckTime.ToString("HH:mm:ss")</span>
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 mr-2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 8 14"></polyline>
+                            </svg>
+                            <span class="text-slate-400 mr-2">Last Check:</span>
+                            <span class="text-slate-300">@service.LastCheckStatus!.CheckTime.ToString("HH:mm:ss")</span>
                         </div>
                     </div>
                 </div>
-                <div class="px-4 sm:px-5 py-3 bg-slate-800/50 border-t border-slate-700">
-                    <a href="@service.Url" target="_blank" class="text-xs text-slate-400 hover:text-purple-400 transition-colors truncate block" title="@service.Url">
+                    
+                <div class="mt-auto pt-3">
+                    @if (service.DependentServices.Any())
+                    {
+                        <div class="mb-3">
+                            <div class="flex items-center text-xs text-slate-400 mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1 flex-shrink-0">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                                <span>Dependencies</span>
+                            </div>
+                            <div class="space-y-1">
+                                @foreach (var dep in service.DependentServices.Take(3))
+                                {
+                                    var depStatusStyle = GetStatusStyle(dep.LastCheckStatus.Status);
+                                    <div class="flex items-center text-xs">
+                                        <span class="inline-block w-2 h-2 rounded-full @depStatusStyle.bgColor mr-2 flex-shrink-0"></span>
+                                        <span class="truncate" title="@dep.Name">@dep.Name</span>
+                                    </div>
+                                }
+                                @if (service.DependentServices.Count > 3)
+                                {
+                                    <div class="text-xs text-slate-500">+@(service.DependentServices.Count - 3) more</div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (service.HistoricStatus.Any())
+                    {
+                        var isExpanded = _expandedHistories.GetValueOrDefault(service.Id, false);
+                        <div class="border-t border-slate-700 pt-3">
+                            <button 
+                                class="w-full flex items-center justify-between text-xs text-slate-400 hover:text-purple-400 transition-colors"
+                                @onclick="() => ToggleHistory(service.Id)">
+                                <div class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1 flex-shrink-0">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    <span>History</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="text-xs text-slate-500 mr-1">Last 5 checks</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform @(isExpanded ? "rotate-180" : "") flex-shrink-0">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                            </button>
+                            @if (isExpanded)
+                            {
+                                <div class="space-y-1 mt-2">
+                                    @foreach (var status in service.HistoricStatus.Take(5))
+                                    {
+                                        var histStatusStyle = GetStatusStyle(status.Status);
+                                        <div class="flex items-center justify-between text-xs">
+                                            <div class="flex items-center min-w-0">
+                                                <span class="inline-block w-2 h-2 rounded-full @histStatusStyle.bgColor mr-2 flex-shrink-0"></span>
+                                                <span class="truncate">@status.Status</span>
+                                            </div>
+                                            <span class="text-slate-500 whitespace-nowrap ml-2">@status.CheckTime.ToString("HH:mm")</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="px-4 sm:px-5 py-3 bg-slate-800/50 border-t border-slate-700 flex items-center justify-between">
+                    <a href="@service.Url" target="_blank" class="text-xs text-slate-400 hover:text-purple-400 transition-colors truncate flex-1 pr-2" title="@service.Url">
                         @service.Url
                     </a>
                 </div>
@@ -71,14 +169,35 @@ else
     </div>
 }
 @code {
-    private Service[]? _services;
+    private Service[] _services = Array.Empty<Service>();
     private HubConnection? _hubConnection;
+    private Dictionary<string, bool> _expandedHistories = new();
     
     protected override async Task OnInitializedAsync()
     {
         var data = await client.GetFromJsonAsync<Service[]>(NavigationManager.ToAbsoluteUri("/data"));
         _services = data;
+        foreach (var service in _services)
+        {
+            if (!_expandedHistories.ContainsKey(service.Id))
+            {
+                _expandedHistories[service.Id] = false;
+            }
+        }
         await InitializeHubAsync();
+    }
+
+    private void ToggleHistory(string serviceId)
+    {
+        if (_expandedHistories.ContainsKey(serviceId))
+        {
+            _expandedHistories[serviceId] = !_expandedHistories[serviceId];
+        }
+        else
+        {
+            _expandedHistories[serviceId] = true;
+        }
+        StateHasChanged();
     }
 
     private async Task InitializeHubAsync()
@@ -90,6 +209,17 @@ else
         _hubConnection.On<Service[]>("ReceiveNotification", services =>
         {
             _services = services;
+            // Update expanded states for any new services
+            if (_services != null)
+            {
+                foreach (var service in _services)
+                {
+                    if (!_expandedHistories.ContainsKey(service.Id))
+                    {
+                        _expandedHistories[service.Id] = false;
+                    }
+                }
+            }
             InvokeAsync(StateHasChanged);
         });
         

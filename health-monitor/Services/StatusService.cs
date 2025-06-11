@@ -1,5 +1,7 @@
 using health_monitor.Client.Model;
 
+namespace health_monitor.Services;
+
 public class StatusService
 {
     public Service[] GetServices()

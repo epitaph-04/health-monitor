@@ -1,0 +1,29 @@
+[
+  {
+    "Name": "Google Search",
+    "Type": "HTTP",
+    "Target": "https://www.google.com",
+    "ExpectedResponseCode": 200,
+    "Method": "GET",
+    "TimeoutSeconds": 10
+  },
+  {
+    "Name": "Primary Database",
+    "Type": "DB",
+    "Target": "Server=your_db_server;Database=your_db;User Id=your_user;Password=your_password;",
+    "Query": "SELECT 1;",
+    "TimeoutSeconds": 15
+  },
+  {
+    "Name": "Example API (POST)",
+    "Type": "HTTP",
+    "Target": "https://jsonplaceholder.typicode.com/posts",
+    "Method": "POST",
+    "RequestBody": "{ \"title\": \"foo\", \"body\": \"bar\", \"userId\": 1 }",
+    "Headers": {
+      "Content-type": "application/json; charset=UTF-8"
+    },
+    "ExpectedResponseCode": 201,
+    "TimeoutSeconds": 20
+  }
+]
