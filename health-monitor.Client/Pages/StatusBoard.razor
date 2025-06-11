@@ -2,14 +2,24 @@
 @using health_monitor.Client.Model
 @using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
+@inject NavigationManager NavigationManager
+@inject HttpClient Client
 
 <PageTitle>Status Board</PageTitle>
 
-@if (_services == null)
+@if (_servicesById.Count == 0)
 {
-    <p>
-        <em>Loading...</em>
-    </p>
+    <div class="flex items-center justify-center h-64">
+        <div class="animate-pulse text-slate-400">
+            <div class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Loading services...</span>
+            </div>
+        </div>
+    </div>
 }
 else
 {
@@ -38,11 +48,10 @@ else
                         <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">URL</th>
                         <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Last Check</th>
                         <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Resp. Time</th>
-                        <th scope="col" class="px-3 sm:px-4 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
                     </tr>
                     </thead>
                     <tbody id="statusTableBody" class="bg-slate-800 divide-y divide-slate-700">
-                    @foreach (var service in _services)
+                    @foreach (var service in _servicesById.Values)
                     {
                         <tr class="hover:bg-slate-700/40 transition-colors">
                             <td class="px-3 sm:px-4 py-3 whitespace-nowrap align-top">
@@ -121,15 +130,6 @@ else
                             <td class="px-3 sm:px-4 py-3 whitespace-nowrap align-top text-sm text-slate-300 truncate max-w-[150px] sm:max-w-xs" title="@service.Url">@service.Url</td>
                             <td class="px-3 sm:px-4 py-3 whitespace-nowrap align-top text-sm text-slate-300">@service.LastCheckStatus.CheckTime.ToLongTimeString()</td>
                             <td class="px-3 sm:px-4 py-3 whitespace-nowrap align-top text-sm text-slate-300">@($"{service.LastCheckStatus.ResponseTime}ms")</td>
-                            <td class="px-3 sm:px-4 py-3 whitespace-nowrap align-top text-right text-sm font-medium">
-                                <button class="text-purple-400 hover:text-purple-300" title="Actions">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="1"/>
-                                        <circle cx="12" cy="5" r="1"/>
-                                        <circle cx="12" cy="19" r="1"/>
-                                    </svg>
-                                </button>
-                            </td>
                         </tr>
                     }
                     </tbody>
@@ -140,17 +140,29 @@ else
 }
 
 @code {
-    private Service[]? _services;
+    private Dictionary<string, Service> _servicesById = new();
     private HubConnection? _hubConnection;
     
     protected override async Task OnInitializedAsync()
     {
-        _hubConnection = new HubConnectionBuilder().WithUrl("http://localhost:5000/notification").Build();
-        _hubConnection.On<Service[]>("ReceiveNotification", svc =>
+        var data = await Client.GetFromJsonAsync<Service[]>(NavigationManager.ToAbsoluteUri("/data"));
+        if (data?.Length > 0)
+            _servicesById = data.ToDictionary(s => s.Id, s => s);
+        await InitializeHubAsync();
+    }
+
+    private async Task InitializeHubAsync()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/notification"))
+            .Build();
+            
+        _hubConnection.On<Service>("ReceiveNotification", service =>
         {
-            _services = svc;
+            _servicesById[service.Id] = service;
             InvokeAsync(StateHasChanged);
         });
+        
         await _hubConnection.StartAsync();
     }
 

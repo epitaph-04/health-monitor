@@ -1,6 +1,7 @@
 using health_monitor.BackgroundServices;
 using health_monitor.Components;
 using health_monitor.Hub;
+using health_monitor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,9 +10,12 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
+await builder.Services.ConfigureHealthCheckService(builder.Environment, "healthcheckconfig.json");
 builder.Services.AddCors();
 builder.Services.AddSignalR();
-builder.Services.AddHostedService<HealthCheckService>();
+builder.Services.AddSingleton<StatusService>();
+builder.Services.AddHostedService<HealthCheckServiceOrchestrator>();
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
@@ -27,6 +31,7 @@ else
 app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 app.UseAntiforgery();
 app.MapHub<NotificationHub>("notification");
+app.MapGet("/data", (StatusService statusService) => Results.Ok(statusService.GetServices()));
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
