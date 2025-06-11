@@ -1,9 +1,12 @@
+using health_monitor.Client.Model;
+
 namespace health_monitor.Models;
 
 public class ApplicationConfiguration
 {
+    public string Id { get; set; } = null!;
     public string Name { get; set; } = null!;
-    public ApplicationType Type { get; set; }
+    public ServiceType Type { get; set; }
     public string Target { get; set; } = null!;
     public int ExpectedResponseCode { get; set; } = 200;
     public string Method { get; set; } = "GET";

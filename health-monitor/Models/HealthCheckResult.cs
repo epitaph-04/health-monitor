@@ -1,10 +1,11 @@
+using health_monitor.Client.Model;
+
 namespace health_monitor.Models;
 
-public class HealthCheckResult(string applicationName)
+public class HealthCheckResult
 {
-    public string ApplicationName { get; set; } = applicationName;
-    public HealthStatus Status { get; set; } = HealthStatus.Unknown;
+    public Status Status { get; set; } = Status.Unknown;
     public TimeSpan ResponseTime { get; set; }
     public DateTime LastCheckedUtc { get; set; } = DateTime.UtcNow;
-    public string? ErrorMessage { get; set; }
+    public string Message { get; set; } = null!;
 }

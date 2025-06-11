@@ -4,5 +4,7 @@ public enum ServiceType
 {
     Http,
     Db,
-    MessageBus,
+    Sns,
+    Sqs,
+    Rabbitmq
 }

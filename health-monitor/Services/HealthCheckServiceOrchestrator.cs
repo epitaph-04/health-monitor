@@ -1,3 +1,4 @@
+using health_monitor.Client.Model;
 using health_monitor.Hub;
 using health_monitor.Services;
 using Microsoft.AspNetCore.SignalR;
@@ -7,7 +8,6 @@ namespace health_monitor.BackgroundServices;
 public class HealthCheckServiceOrchestrator(
     IHubContext<NotificationHub, INotificationClient> context,
     IEnumerable<IHealthCheckService> healthCheckServices,
-    StatusService statusService,
     ILogger<HealthCheckServiceOrchestrator> logger
     ) : BackgroundService
 {
@@ -21,10 +21,26 @@ public class HealthCheckServiceOrchestrator(
         {
             foreach (var healthCheckService in healthCheckServices)
             {
-                var healthCheckResult =await healthCheckService.CheckHealthAsync();
+                logger.LogInformation("Checking health for service: {ServiceName}", healthCheckService.Name);
+                var healthCheckResult = await healthCheckService.CheckHealthAsync();
+                var service = new Service
+                {
+                    Id = healthCheckService.Id,
+                    Name = healthCheckService.Name,
+                    Url = healthCheckService.Target,
+                    ServiceType = healthCheckService.Type,
+                    LastCheckStatus = new StatusInfo(
+                        healthCheckResult.Status, 
+                        healthCheckResult.Message, 
+                        TimeOnly.FromDateTime(healthCheckResult.LastCheckedUtc), 
+                        healthCheckResult.ResponseTime.Milliseconds),
+                    HistoricStatus = new Queue<StatusInfo>(
+                        healthCheckService.GetHistoricalHealthCheckResults()
+                            .Select(h => new StatusInfo(h.Status, h.Message, TimeOnly.FromDateTime(h.LastCheckedUtc), h.ResponseTime.Milliseconds))
+                        )
+                };
+                await context.Clients.All.ReceiveNotification(service);
             }
-            logger.LogInformation("Executing health check {Time}", DateTime.Now);
-            await context.Clients.All.ReceiveAllNotifications(statusService.GetServices());
         }
     }
 }

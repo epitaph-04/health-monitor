@@ -7,6 +7,5 @@ public class NotificationHub : Hub<INotificationClient> { }
 
 public interface INotificationClient
 {
-    Task ReceiveAllNotifications(Service[] services);
     Task ReceiveNotification(Service service);
 }

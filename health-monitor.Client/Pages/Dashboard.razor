@@ -4,26 +4,11 @@
 @using Microsoft.AspNetCore.Components
 @implements IAsyncDisposable
 @inject NavigationManager NavigationManager
-@inject HttpClient client
+@inject HttpClient Client
 
-<PageTitle>HealthPulse</PageTitle>
+<PageTitle>Dashboard</PageTitle>
 
-<style>
-    .icon-text-align {
-        display: inline-flex;
-        align-items: center;
-        vertical-align: middle;
-    }
-    .service-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .service-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-</style>
-
-@if (_services == null)
+@if (_servicesById.Count == 0)
 {
     <div class="flex items-center justify-center h-64">
         <div class="animate-pulse text-slate-400">
@@ -44,160 +29,86 @@ else
         <p class="text-slate-400">Overview of all monitored services</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 h-full">
-        @foreach (var service in _services)
-        {
-            var statusStyle = GetStatusStyle(service.LastCheckStatus.Status);
-            <div class="service-card rounded-lg shadow-lg overflow-hidden border flex flex-col h-full @statusStyle.bg @statusStyle.border">
-                <div class="p-4 sm:p-5 flex flex-col h-full">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex items-center min-w-0 flex-1">
-                            @statusStyle.icon
-                            <h3 class="ml-2 text-base sm:text-lg font-semibold @statusStyle.text truncate" title="@service.Name">@service.Name</h3>
-                        </div>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium @statusStyle.bgColor @statusStyle.text whitespace-nowrap ml-2">
-                            @service.LastCheckStatus.Status
-                        </span>
+    <div id="dashboardView" class="view-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+    @foreach (var service in _servicesById.Values)
+    {
+        var statusStyle = GetStatusStyle(service.LastCheckStatus.Status);
+        <div class="service-card rounded-lg shadow-lg overflow-hidden @statusStyle.bg @statusStyle.border border flex flex-col">
+            <div class="p-3 sm:p-4 flex-grow">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center min-w-0">
+                        @statusStyle.icon
+                        <h3 class="ml-2 text-base sm:text-lg font-semibold @statusStyle.text truncate" title="@service.Name">
+                            @service.Name
+                        </h3>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4 truncate">@service.ServiceType</p>
-
-                    <div class="space-y-2 flex-1">
-                        <div class="flex items-center text-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-slate-400 flex-shrink-0">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
+                    <div class="flex space-x-1 flex-shrink-0">
+                        <button class="expand-btn p-1 text-slate-400 hover:text-slate-200 rounded-full hover:bg-slate-600/50 transition-colors" title="Toggle Details">
+                            <svg class="chevron-down" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"/>
                             </svg>
-                            <span class="text-slate-300 truncate">@(service.LastCheckStatus?.ResponseTime)ms response</span>
-                        </div>
-                        <div class="flex items-center text-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-slate-400 flex-shrink-0">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="16" y1="2" x2="16" y2="6"></line>
-                                <line x1="8" y1="2" x2="8" y2="6"></line>
-                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            <svg class="chevron-up hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="18 15 12 9 6 15"/>
                             </svg>
-                            <span class="text-slate-400 truncate">@service.LastCheckStatus?.CheckTime.ToString("HH:mm:ss")</span>
-                        </div>
-                        <div class="flex items-center text-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400 mr-2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 8 14"></polyline>
-                            </svg>
-                            <span class="text-slate-400 mr-2">Last Check:</span>
-                            <span class="text-slate-300">@service.LastCheckStatus!.CheckTime.ToString("HH:mm:ss")</span>
-                        </div>
+                        </button>
                     </div>
                 </div>
-                    
-                <div class="mt-auto pt-3">
-                    @if (service.DependentServices.Any())
-                    {
-                        <div class="mb-3">
-                            <div class="flex items-center text-xs text-slate-400 mb-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1 flex-shrink-0">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="9" cy="7" r="4"></circle>
-                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                </svg>
-                                <span>Dependencies</span>
-                            </div>
-                            <div class="space-y-1">
-                                @foreach (var dep in service.DependentServices.Take(3))
-                                {
-                                    var depStatusStyle = GetStatusStyle(dep.LastCheckStatus.Status);
-                                    <div class="flex items-center text-xs">
-                                        <span class="inline-block w-2 h-2 rounded-full @depStatusStyle.bgColor mr-2 flex-shrink-0"></span>
-                                        <span class="truncate" title="@dep.Name">@dep.Name</span>
-                                    </div>
-                                }
-                                @if (service.DependentServices.Count > 3)
-                                {
-                                    <div class="text-xs text-slate-500">+@(service.DependentServices.Count - 3) more</div>
-                                }
-                            </div>
-                        </div>
-                    }
-
-                    @if (service.HistoricStatus.Any())
-                    {
-                        var isExpanded = _expandedHistories.GetValueOrDefault(service.Id, false);
-                        <div class="border-t border-slate-700 pt-3">
-                            <button 
-                                class="w-full flex items-center justify-between text-xs text-slate-400 hover:text-purple-400 transition-colors"
-                                @onclick="() => ToggleHistory(service.Id)">
-                                <div class="flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1 flex-shrink-0">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <polyline points="12 6 12 12 16 14"></polyline>
-                                    </svg>
-                                    <span>History</span>
-                                </div>
-                                <div class="flex items-center">
-                                    <span class="text-xs text-slate-500 mr-1">Last 5 checks</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform @(isExpanded ? "rotate-180" : "") flex-shrink-0">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                </div>
-                            </button>
-                            @if (isExpanded)
-                            {
-                                <div class="space-y-1 mt-2">
-                                    @foreach (var status in service.HistoricStatus.Take(5))
-                                    {
-                                        var histStatusStyle = GetStatusStyle(status.Status);
-                                        <div class="flex items-center justify-between text-xs">
-                                            <div class="flex items-center min-w-0">
-                                                <span class="inline-block w-2 h-2 rounded-full @histStatusStyle.bgColor mr-2 flex-shrink-0"></span>
-                                                <span class="truncate">@status.Status</span>
-                                            </div>
-                                            <span class="text-slate-500 whitespace-nowrap ml-2">@status.CheckTime.ToString("HH:mm")</span>
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                    }
+                <p class="text-xs text-slate-400 truncate mb-1" title="@service.Url">
+                    <span class="font-semibold">@service.ServiceType -</span> @service.Url
+                </p>
+                <div class="text-sm font-medium px-2 py-0.5 rounded inline-block @statusStyle.bg @statusStyle.border @statusStyle.text mb-1">
+                    @service.LastCheckStatus.Status
                 </div>
-                <div class="px-4 sm:px-5 py-3 bg-slate-800/50 border-t border-slate-700 flex items-center justify-between">
-                    <a href="@service.Url" target="_blank" class="text-xs text-slate-400 hover:text-purple-400 transition-colors truncate flex-1 pr-2" title="@service.Url">
-                        @service.Url
-                    </a>
+                <p class="text-xs text-slate-400 mt-1">Status: @service.LastCheckStatus.StatusMsg</p>
+                <div class="flex justify-between text-xs text-slate-400 mt-2">
+                    <span class="icon-text-align">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        @service.LastCheckStatus.ResponseTime ms
+                    </span>
+                    <span class="icon-text-align">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        @service.LastCheckStatus.CheckTime.ToString("HH:mm:ss")
+                    </span>
                 </div>
+                <p class="text-xs text-slate-400 mt-1">Interval: 30s</p>
             </div>
-        }
+            <div class="details-content p-3 sm:p-4 border-t border-slate-700/50">
+                <p class="text-xs text-slate-300 font-semibold mb-1">History:</p>
+                <ul class="space-y-1 max-h-24 history-scroll overflow-y-auto pr-1">
+                    @foreach (var historicStatus in service.HistoricStatus)
+                    {
+                        <li class="text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded">
+                            <span class="font-mono">@historicStatus.CheckTime.ToString("HH:mm:ss"): </span>@historicStatus.StatusMsg (@historicStatus.ResponseTime ms)
+                        </li>
+                    }
+                </ul>
+                <div class="mt-2 flex flex-wrap gap-1">
+                    <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">API</span>
+                    <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">Production</span>
+                </div>
+            </div>   
+        </div>
+    }
     </div>
 }
 @code {
-    private Service[] _services = Array.Empty<Service>();
+    private Dictionary<string, Service> _servicesById = new();
     private HubConnection? _hubConnection;
-    private Dictionary<string, bool> _expandedHistories = new();
     
     protected override async Task OnInitializedAsync()
     {
-        var data = await client.GetFromJsonAsync<Service[]>(NavigationManager.ToAbsoluteUri("/data"));
-        _services = data;
-        foreach (var service in _services)
-        {
-            if (!_expandedHistories.ContainsKey(service.Id))
-            {
-                _expandedHistories[service.Id] = false;
-            }
-        }
+        var data = await Client.GetFromJsonAsync<Service[]>(NavigationManager.ToAbsoluteUri("/data"));
+        if (data?.Length > 0)
+            _servicesById = data.ToDictionary(s => s.Id, s => s);
         await InitializeHubAsync();
-    }
-
-    private void ToggleHistory(string serviceId)
-    {
-        if (_expandedHistories.ContainsKey(serviceId))
-        {
-            _expandedHistories[serviceId] = !_expandedHistories[serviceId];
-        }
-        else
-        {
-            _expandedHistories[serviceId] = true;
-        }
-        StateHasChanged();
     }
 
     private async Task InitializeHubAsync()
@@ -206,20 +117,9 @@ else
             .WithUrl(NavigationManager.ToAbsoluteUri("/notification"))
             .Build();
             
-        _hubConnection.On<Service[]>("ReceiveNotification", services =>
+        _hubConnection.On<Service>("ReceiveNotification", service =>
         {
-            _services = services;
-            // Update expanded states for any new services
-            if (_services != null)
-            {
-                foreach (var service in _services)
-                {
-                    if (!_expandedHistories.ContainsKey(service.Id))
-                    {
-                        _expandedHistories[service.Id] = false;
-                    }
-                }
-            }
+            _servicesById[service.Id] = service;
             InvokeAsync(StateHasChanged);
         });
         

@@ -1,80 +1,114 @@
 using health_monitor.Models;
 using System.Diagnostics;
 using System.Text;
+using health_monitor.Client.Model;
 
 namespace health_monitor.Services
 {
-    public class HttpHealthCheckService(HttpClient httpClient, ApplicationConfiguration appConfig) : IHealthCheckService
+    public class HttpHealthCheckService : IHealthCheckService
     {
-        public ApplicationType Type => ApplicationType.Http;
+        private readonly HttpClient _httpClient;
+        private readonly ApplicationConfiguration _appConfig;
+        private readonly ILogger<HttpHealthCheckService> _logger;
+        private HealthCheckResult _lastCheckedResult = new()
+        {
+            Message = "Unknown",
+            ResponseTime = TimeSpan.Zero,
+            Status = Status.Unknown,
+            LastCheckedUtc = DateTime.UtcNow,
+        };
+        private readonly Queue<HealthCheckResult> _historicalHealthCheckResults = new(10);
+
+        public HttpHealthCheckService(HttpClient httpClient, ApplicationConfiguration appConfig, ILogger<HttpHealthCheckService> logger)
+        {
+            _httpClient = httpClient;
+            _appConfig = appConfig;
+            _logger = logger;
+            
+            _httpClient.Timeout = TimeSpan.FromSeconds(appConfig.TimeoutSeconds);
+        }
+
+        public string Id => _appConfig.Id;
+        public string Name => _appConfig.Name;
+        public ServiceType Type => ServiceType.Http;
+        public string Target => _appConfig.Target;
+        public HealthCheckResult LastCheckedResult => _lastCheckedResult;
 
         public async Task<HealthCheckResult> CheckHealthAsync()
         {
-            var result = new HealthCheckResult(appConfig.Name);
+            var result = new HealthCheckResult();
             var stopwatch = new Stopwatch();
 
             try
             {
-                httpClient.Timeout = TimeSpan.FromSeconds(appConfig.TimeoutSeconds);
-                var request = new HttpRequestMessage(new HttpMethod(appConfig.Method), appConfig.Target);
-                if (appConfig.Headers != null)
+                var request = new HttpRequestMessage(new HttpMethod(_appConfig.Method), _appConfig.Target);
+                if (_appConfig.Headers != null)
                 {
-                    foreach (var header in appConfig.Headers)
+                    foreach (var header in _appConfig.Headers)
                     {
                         request.Headers.TryAddWithoutValidation(header.Key, header.Value);
                     }
                 }
-                if (!string.IsNullOrEmpty(appConfig.RequestBody) && (appConfig.Method.ToUpper() == "POST" || appConfig.Method.ToUpper() == "PUT"))
+                if (!string.IsNullOrEmpty(_appConfig.RequestBody) && (_appConfig.Method.ToUpper() == "POST" || _appConfig.Method.ToUpper() == "PUT"))
                 {
                     string contentType = "application/json";
-                    if(appConfig.Headers != null && appConfig.Headers.TryGetValue("Content-Type", out var ctHeader))
+                    if(_appConfig.Headers != null && _appConfig.Headers.TryGetValue("Content-Type", out var ctHeader))
                     {
                         contentType = ctHeader;
                     }
-                    request.Content = new StringContent(appConfig.RequestBody, Encoding.UTF8, contentType);
+                    request.Content = new StringContent(_appConfig.RequestBody, Encoding.UTF8, contentType);
                 }
 
                 stopwatch.Start();
-                HttpResponseMessage response = await httpClient.SendAsync(request);
+                HttpResponseMessage response = await _httpClient.SendAsync(request);
                 stopwatch.Stop();
 
                 result.ResponseTime = stopwatch.Elapsed;
-                result.Status = response.StatusCode == (System.Net.HttpStatusCode)appConfig.ExpectedResponseCode
-                                ? HealthStatus.Healthy
-                                : HealthStatus.Unhealthy;
-
-                if (result.Status == HealthStatus.Unhealthy)
+                result.Message = "Ok";
+                result.Status = response.StatusCode == (System.Net.HttpStatusCode)_appConfig.ExpectedResponseCode
+                                ? Status.Healthy
+                                : Status.Critical;
+                if (result.Status == Status.Critical)
                 {
-                    result.ErrorMessage = $"Unexpected status code: {response.StatusCode}. Response: {await response.Content.ReadAsStringAsync()}";
+                    result.Message = $"Unexpected status code: {response.StatusCode}. Response: {await response.Content.ReadAsStringAsync()}";
                 }
             }
             catch (TaskCanceledException ex)
             {
                 stopwatch.Stop();
-                result.Status = HealthStatus.Unhealthy;
-                result.ErrorMessage = $"Request timed out after {appConfig.TimeoutSeconds} seconds. {ex.Message}";
+                result.Status = Status.Critical;
+                result.Message = $"Request timed out after {_appConfig.TimeoutSeconds} seconds. {ex.Message}";
                 result.ResponseTime = stopwatch.Elapsed;
+                _logger.LogError("Request timed out, {error}", ex);
             }
             catch (HttpRequestException ex)
             {
                 stopwatch.Stop();
-                result.Status = HealthStatus.Unhealthy;
-                result.ErrorMessage = $"HTTP request failed: {ex.Message}";
+                result.Status = Status.Critical;
+                result.Message = $"HTTP request failed: {ex.Message}";
                 if(stopwatch.IsRunning) stopwatch.Stop();
                 result.ResponseTime = stopwatch.Elapsed;
+                _logger.LogError("HTTP request failed, {error}", ex);
             }
             catch (Exception ex)
             {
                 if(stopwatch.IsRunning) stopwatch.Stop();
-                result.Status = HealthStatus.Unhealthy;
-                result.ErrorMessage = $"An unexpected error occurred: {ex.Message}";
+                result.Status = Status.Critical;
+                result.Message = $"An unexpected error occurred: {ex.Message}";
                 result.ResponseTime = stopwatch.Elapsed;
+                _logger.LogError("An unexpected error occurred, {error}", ex);
             }
             finally
             {
                 result.LastCheckedUtc = DateTime.UtcNow;
             }
+            _historicalHealthCheckResults.Enqueue(_lastCheckedResult);
+            _lastCheckedResult = result;
             return result;
+        }
+        public IEnumerable<HealthCheckResult> GetHistoricalHealthCheckResults()
+        {
+            return _historicalHealthCheckResults.Reverse();
         }
     }
 }
