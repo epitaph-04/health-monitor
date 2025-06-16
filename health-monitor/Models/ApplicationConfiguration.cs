@@ -14,4 +14,5 @@ public class ApplicationConfiguration
     public Dictionary<string, string>? Headers { get; set; }
     public string? Query { get; set; }
     public int TimeoutSeconds { get; set; } = 30;
+    public string[] Tag { get; set; } = [];
 }

@@ -14,8 +14,7 @@
         <EmccMaximumHeapSize>163840000</EmccMaximumHeapSize>
         <BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>
         <RunAOTCompilation>true</RunAOTCompilation>
-        <PublishTrimmed>true</PublishTrimmed>
-        <TrimMode>full</TrimMode>
+        <WasmStripILAfterAOT>true</WasmStripILAfterAOT>
         <WasmBuildNative>true</WasmBuildNative>
         <InvariantGlobalization>true</InvariantGlobalization>
         <InvariantTimezone>true</InvariantTimezone>

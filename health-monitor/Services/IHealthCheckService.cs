@@ -10,6 +10,7 @@ public interface IHealthCheckService
     ServiceType Type { get; }
     string Target { get; }
     HealthCheckResult LastCheckedResult { get; }
+    string[] Tag { get; }
     Task<HealthCheckResult> CheckHealthAsync();
     IEnumerable<HealthCheckResult> GetHistoricalHealthCheckResults();
 }

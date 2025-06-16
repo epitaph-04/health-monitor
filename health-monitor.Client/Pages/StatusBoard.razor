@@ -3,7 +3,6 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
 @inject NavigationManager NavigationManager
-@inject HttpClient Client
 
 <PageTitle>Status Board</PageTitle>
 
@@ -145,9 +144,6 @@ else
     
     protected override async Task OnInitializedAsync()
     {
-        var data = await Client.GetFromJsonAsync<Service[]>(NavigationManager.ToAbsoluteUri("/data"));
-        if (data?.Length > 0)
-            _servicesById = data.ToDictionary(s => s.Id, s => s);
         await InitializeHubAsync();
     }
 
@@ -155,8 +151,15 @@ else
     {
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/notification"))
+            .WithAutomaticReconnect()
             .Build();
-            
+           
+        _hubConnection.On<Service[]>("ReceiveAllNotification", services =>
+        {
+            _servicesById = services.ToDictionary(kvp => kvp.Id, kvp => kvp);
+            InvokeAsync(StateHasChanged);
+        });
+        
         _hubConnection.On<Service>("ReceiveNotification", service =>
         {
             _servicesById[service.Id] = service;

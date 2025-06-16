@@ -1,10 +1,8 @@
 @page "/"
 @using health_monitor.Client.Model
 @using Microsoft.AspNetCore.SignalR.Client
-@using Microsoft.AspNetCore.Components
 @implements IAsyncDisposable
 @inject NavigationManager NavigationManager
-@inject HttpClient Client
 
 <PageTitle>Dashboard</PageTitle>
 
@@ -91,8 +89,10 @@ else
                     }
                 </ul>
                 <div class="mt-2 flex flex-wrap gap-1">
-                    <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">API</span>
-                    <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">Production</span>
+                    @foreach (var tag in service.Tag)
+                    {
+                        <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">@tag</span>
+                    }
                 </div>
             </div>   
         </div>
@@ -105,9 +105,6 @@ else
     
     protected override async Task OnInitializedAsync()
     {
-        var data = await Client.GetFromJsonAsync<Service[]>(NavigationManager.ToAbsoluteUri("/data"));
-        if (data?.Length > 0)
-            _servicesById = data.ToDictionary(s => s.Id, s => s);
         await InitializeHubAsync();
     }
 
@@ -115,8 +112,15 @@ else
     {
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/notification"))
+            .WithAutomaticReconnect()
             .Build();
             
+        _hubConnection.On<Service[]>("ReceiveAllNotification", services =>
+        {
+            _servicesById = services.ToDictionary(kvp => kvp.Id, kvp => kvp);
+            InvokeAsync(StateHasChanged);
+        });
+        
         _hubConnection.On<Service>("ReceiveNotification", service =>
         {
             _servicesById[service.Id] = service;

@@ -7,6 +7,7 @@ namespace health_monitor.Services
 {
     public class HttpHealthCheckService : IHealthCheckService
     {
+        private const int MaximumHistorySize = 500;
         private readonly HttpClient _httpClient;
         private readonly ApplicationConfiguration _appConfig;
         private readonly ILogger<HttpHealthCheckService> _logger;
@@ -17,7 +18,7 @@ namespace health_monitor.Services
             Status = Status.Unknown,
             LastCheckedUtc = DateTime.UtcNow,
         };
-        private readonly Queue<HealthCheckResult> _historicalHealthCheckResults = new(10);
+        private readonly Queue<HealthCheckResult> _historicalHealthCheckResults = new();
 
         public HttpHealthCheckService(HttpClient httpClient, ApplicationConfiguration appConfig, ILogger<HttpHealthCheckService> logger)
         {
@@ -32,6 +33,7 @@ namespace health_monitor.Services
         public string Name => _appConfig.Name;
         public ServiceType Type => ServiceType.Http;
         public string Target => _appConfig.Target;
+        public string[] Tag => _appConfig.Tag;
         public HealthCheckResult LastCheckedResult => _lastCheckedResult;
 
         public async Task<HealthCheckResult> CheckHealthAsync()
@@ -102,13 +104,27 @@ namespace health_monitor.Services
             {
                 result.LastCheckedUtc = DateTime.UtcNow;
             }
-            _historicalHealthCheckResults.Enqueue(_lastCheckedResult);
+            EnqueueHealthCheckResult(_lastCheckedResult);
             _lastCheckedResult = result;
             return result;
         }
         public IEnumerable<HealthCheckResult> GetHistoricalHealthCheckResults()
         {
             return _historicalHealthCheckResults.Reverse();
+        }
+
+        private void EnqueueHealthCheckResult(HealthCheckResult result)
+        {
+            _historicalHealthCheckResults.TrimExcess();
+            if (_historicalHealthCheckResults.Count >= MaximumHistorySize)
+            {
+                for (int i = 0; i < _historicalHealthCheckResults.Count - MaximumHistorySize; i++)
+                {
+                    _historicalHealthCheckResults.Dequeue();    
+                }
+            }
+            _historicalHealthCheckResults.Enqueue(_lastCheckedResult);
+            _lastCheckedResult = result;
         }
     }
 }

@@ -29,6 +29,7 @@ public class HealthCheckServiceOrchestrator(
                     Name = healthCheckService.Name,
                     Url = healthCheckService.Target,
                     ServiceType = healthCheckService.Type,
+                    Tag = healthCheckService.Tag,
                     LastCheckStatus = new StatusInfo(
                         healthCheckResult.Status, 
                         healthCheckResult.Message, 

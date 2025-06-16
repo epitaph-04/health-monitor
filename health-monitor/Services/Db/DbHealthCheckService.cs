@@ -7,6 +7,7 @@ namespace health_monitor.Services;
 
 public class DbHealthCheckService(ApplicationConfiguration appConfig) : IHealthCheckService
 {
+    private const int MaximumHistorySize = 500;
     private HealthCheckResult _lastCheckedResult = new()
     {
         Message = "Unknown",
@@ -14,12 +15,13 @@ public class DbHealthCheckService(ApplicationConfiguration appConfig) : IHealthC
         Status = Status.Unknown,
         LastCheckedUtc = DateTime.UtcNow,
     };
-    private readonly Queue<HealthCheckResult> _historicalHealthCheckResults = new(10);
+    private readonly Queue<HealthCheckResult> _historicalHealthCheckResults = new();
     
     public string Id => appConfig.Id;
     public string Name => appConfig.Name;
     public ServiceType Type => ServiceType.Db;
     public string Target => appConfig.Target;
+    public string[] Tag => appConfig.Tag;
     public HealthCheckResult LastCheckedResult => _lastCheckedResult;
     public async Task<HealthCheckResult> CheckHealthAsync()
     {
@@ -72,12 +74,26 @@ public class DbHealthCheckService(ApplicationConfiguration appConfig) : IHealthC
             result.ResponseTime = stopwatch.Elapsed;
             result.LastCheckedUtc = DateTime.UtcNow;
         }
-        _historicalHealthCheckResults.Enqueue(_lastCheckedResult);
+        EnqueueHealthCheckResult(_lastCheckedResult);
         _lastCheckedResult = result;
         return result;
     }
     public IEnumerable<HealthCheckResult> GetHistoricalHealthCheckResults()
     {
         return _historicalHealthCheckResults.Reverse();
+    }
+    
+    private void EnqueueHealthCheckResult(HealthCheckResult result)
+    {
+        _historicalHealthCheckResults.TrimExcess();
+        if (_historicalHealthCheckResults.Count >= MaximumHistorySize)
+        {
+            for (int i = 0; i < _historicalHealthCheckResults.Count - MaximumHistorySize; i++)
+            {
+                _historicalHealthCheckResults.Dequeue();    
+            }
+        }
+        _historicalHealthCheckResults.Enqueue(_lastCheckedResult);
+        _lastCheckedResult = result;
     }
 }

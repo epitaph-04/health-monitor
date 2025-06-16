@@ -31,7 +31,6 @@ else
 app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 app.UseAntiforgery();
 app.MapHub<NotificationHub>("notification");
-app.MapGet("/data", (StatusService statusService) => Results.Ok(statusService.GetServices()));
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()

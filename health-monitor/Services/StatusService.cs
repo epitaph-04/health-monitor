@@ -12,6 +12,7 @@ public class StatusService(IEnumerable<IHealthCheckService> services)
             Name = s.Name,
             Url = s.Target,
             ServiceType = s.Type,
+            Tag = s.Tag,
             LastCheckStatus = new StatusInfo(
                 s.LastCheckedResult.Status, 
                 s.LastCheckedResult.Message, 

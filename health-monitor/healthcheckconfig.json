@@ -1,32 +1,42 @@
 [
   {
-    "Id": "google-search-check",
-    "Name": "Google Search",
+    "Id": "cf-backend",
+    "Name": "CF Backend",
     "Type": "Http",
-    "Target": "https://www.google.com",
+    "Target": "http://campaign-workflow-backend/campaign-workflow/v1/health/liveness",
     "ExpectedResponseCode": 200,
     "Method": "GET",
-    "TimeoutSeconds": 10
+    "TimeoutSeconds": 10,
+    "Tag": ["API", "Production"]
   },
   {
-    "Id": "primary-db-check",
-    "Name": "Primary Database",
-    "Type": "Db",
-    "Target": "Server=your_db_server;Database=your_db;User Id=your_user;Password=your_password;",
-    "Query": "SELECT 1;",
-    "TimeoutSeconds": 15
-  },
-  {
-    "Id": "example-api-post-check",
-    "Name": "Example API (POST)",
+    "Id": "cf-scheduler",
+    "Name": "CF Scheduler",
     "Type": "Http",
-    "Target": "https://jsonplaceholder.typicode.com/posts",
-    "Method": "POST",
-    "RequestBody": "{ \"title\": \"foo\", \"body\": \"bar\", \"userId\": 1 }",
-    "Headers": {
-      "Content-type": "application/json; charset=UTF-8"
-    },
-    "ExpectedResponseCode": 201,
-    "TimeoutSeconds": 20
+    "Target": "http://campaign-flow-scheduler/health/liveness",
+    "ExpectedResponseCode": 200,
+    "Method": "GET",
+    "TimeoutSeconds": 10,
+    "Tag": ["API", "Production"]
+  },
+  {
+    "Id": "audit-logger",
+    "Name": "Audit Logger",
+    "Type": "Http",
+    "Target": "http://audit-logger/health/liveness",
+    "ExpectedResponseCode": 200,
+    "Method": "GET",
+    "TimeoutSeconds": 10,
+    "Tag": ["API", "Production"]
+  },
+  {
+    "Id": "maf-notifier",
+    "Name": "MAF Notifier",
+    "Type": "Http",
+    "Target": "http://maf-notifier/health/liveness",
+    "ExpectedResponseCode": 200,
+    "Method": "GET",
+    "TimeoutSeconds": 10,
+    "Tag": ["API", "Production"]
   }
 ]

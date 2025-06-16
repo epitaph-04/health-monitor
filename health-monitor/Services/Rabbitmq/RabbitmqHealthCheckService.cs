@@ -9,6 +9,7 @@ public class RabbitmqHealthCheckService(ApplicationConfiguration appConfig) : IH
     public string Name => appConfig.Name;
     public ServiceType Type => ServiceType.Rabbitmq;
     public string Target => appConfig.Target;
+    public string[] Tag => appConfig.Tag;
     public HealthCheckResult LastCheckedResult => new()
     {
         Message = "",

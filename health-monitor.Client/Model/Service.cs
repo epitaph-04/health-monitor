@@ -8,5 +8,6 @@ public class Service
     public ServiceType ServiceType { get; init; } = ServiceType.Http;
     public StatusInfo LastCheckStatus { get; init; } = null!;
     public Queue<StatusInfo> HistoricStatus { get; init; } = new(5);
+    public string[] Tag { get; init; } = [];
     public List<Service> DependentServices { get; init; } = new();
 }

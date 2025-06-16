@@ -10,6 +10,7 @@ public class SnsHealthCheckService(ApplicationConfiguration appConfig): IHealthC
     public string Name => appConfig.Name;
     public ServiceType Type => ServiceType.Sns;
     public string Target => appConfig.Target;
+    public string[] Tag => appConfig.Tag;
     public HealthCheckResult LastCheckedResult => new()
     {
         Message = "",
