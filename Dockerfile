@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/nightly/sdk:10.0-preview AS setup
+FROM mcr.microsoft.com/dotnet/nightly/sdk:10.0.100-preview.5 AS setup
 WORKDIR /src
 RUN apt update -y && apt install python3 -y
 RUN dotnet workload install wasm-tools

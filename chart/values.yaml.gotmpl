@@ -1,0 +1,57 @@
+ingress:
+  enabled: true
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-2:331944361160:certificate/b2f6fc80-a123-434e-a2d7-ca0e5a178e74
+    alb.ingress.kubernetes.io/group.name: cf-monitor-prod-internal
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/inbound-cidrs: '10.0.0.0/8'
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=3600
+  hosts:
+    - host: cf-monitor-prod.cw.n1.nielsen.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+    - host: cf-monitor-prod.b.us.cw.n1.nielsen.com
+      paths:
+        - path: /*
+          pathType: ImplementationSpecific
+
+config:
+  - Id: cf-backend
+    Name: CF Backend
+    Type: Http
+    Target: http://campaign-workflow-backend/campaign-workflow/v1/health/liveness
+    ExpectedResponseCode: 200
+    Method: GET
+    TimeoutSeconds: 10
+    Tag: ["API", "Production"]
+  - Id: cf-scheduler
+    Name: CF Scheduler
+    Type: Http
+    Target: http://campaign-flow-scheduler/health/liveness
+    ExpectedResponseCode: 200
+    Method: GET
+    TimeoutSeconds: 10
+    Tag: ["API", "Production"]
+  - Id": audit-logger
+    Name: Audit Logger
+    Type: Http
+    Target: http://audit-logger/health/liveness
+    ExpectedResponseCode: 200
+    Method: GET
+    TimeoutSeconds: 10
+    Tag: ["API", "Production"]
+  - Id: maf-notifier
+    Name: MAF Notifier
+    Type: Http
+    Target: http://maf-notifier/health/liveness
+    ExpectedResponseCode: 200
+    Method: GET
+    TimeoutSeconds: 10
+    Tag: ["API", "Production"]

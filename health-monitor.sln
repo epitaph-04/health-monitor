@@ -7,9 +7,23 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution", "Solution", "{09FAE936-0C1B-4093-80B2-D4DA4943A1B0}"
 	ProjectSection(SolutionItems) = preProject
 		tailwindcss = tailwindcss
-		card.html = card.html
 		Dockerfile = Dockerfile
 		.dockerignore = .dockerignore
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "chart", "chart", "{18BA5697-1721-4256-BACB-ECE94973B0C1}"
+	ProjectSection(SolutionItems) = preProject
+		chart\cf-monitor\Chart.yaml = chart\cf-monitor\Chart.yaml
+		chart\cf-monitor\.helmignore = chart\cf-monitor\.helmignore
+		chart\cf-monitor\templates\deployment.yaml = chart\cf-monitor\templates\deployment.yaml
+		chart\cf-monitor\templates\NOTES.txt = chart\cf-monitor\templates\NOTES.txt
+		chart\cf-monitor\templates\ingress.yaml = chart\cf-monitor\templates\ingress.yaml
+		chart\cf-monitor\templates\service.yaml = chart\cf-monitor\templates\service.yaml
+		chart\cf-monitor\templates\_helpers.tpl = chart\cf-monitor\templates\_helpers.tpl
+		chart\cf-monitor\values.yaml = chart\cf-monitor\values.yaml
+		chart\helmfile.yaml = chart\helmfile.yaml
+		chart\values.yaml.gotmpl = chart\values.yaml.gotmpl
+		chart\cf-monitor\templates\configmap.yaml = chart\cf-monitor\templates\configmap.yaml
 	EndProjectSection
 EndProject
 Global
@@ -26,5 +40,8 @@ Global
 		{96C15BAA-4147-4B44-A24C-B7D5B7ADE338}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96C15BAA-4147-4B44-A24C-B7D5B7ADE338}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96C15BAA-4147-4B44-A24C-B7D5B7ADE338}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{18BA5697-1721-4256-BACB-ECE94973B0C1} = {09FAE936-0C1B-4093-80B2-D4DA4943A1B0}
 	EndGlobalSection
 EndGlobal
