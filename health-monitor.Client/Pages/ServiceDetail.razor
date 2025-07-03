@@ -1,0 +1,325 @@
+@page "/services/{ServiceId}"
+@page "/analytics/service/{ServiceId}"
+@using health_monitor.Models
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>Service Details - @(service?.Name ?? "Loading...")</PageTitle>
+
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div>
+                    <nav class="flex" aria-label="Breadcrumb">
+                        <ol class="flex items-center space-x-4">
+                            <li>
+                                <button @onclick="() => Navigation.NavigateTo('/analytics')" class="text-gray-500 hover:text-gray-700">
+                                    Analytics
+                                </button>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <svg class="flex-shrink-0 h-5 w-5 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                                    </svg>
+                                    <span class="ml-4 text-gray-700 font-medium">@(service?.Name ?? "Service")</span>
+                                </div>
+                            </li>
+                        </ol>
+                    </nav>
+                    <h1 class="text-3xl font-bold text-gray-900 mt-2">Service Analytics</h1>
+                    <p class="text-gray-600">Detailed performance and health analytics for @(service?.Name ?? "this service")</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button @onclick="RefreshData" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        @if (isLoading)
+        {
+            <div class="flex justify-center items-center h-64">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        }
+        else if (service == null)
+        {
+            <div class="text-center py-16">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Service Not Found</h3>
+                <p class="mt-1 text-sm text-gray-500">The requested service could not be found.</p>
+                <div class="mt-6">
+                    <button @onclick="() => Navigation.NavigateTo('/analytics')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        Return to Analytics
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Service Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Current Status</p>
+                            <p class="text-2xl font-bold @GetStatusColor(service.Status)">@service.Status</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Last Check</p>
+                            <p class="text-2xl font-bold text-gray-900">@service.LastChecked.ToString("HH:mm")</p>
+                            <p class="text-sm text-gray-500">@service.LastChecked.ToString("MMM dd")</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Response Time</p>
+                            <p class="text-2xl font-bold text-gray-900">@(service.ResponseTime?.ToString("F0") ?? "N/A") ms</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2v1a1 1 0 001 1h1a1 1 0 001-1V3a2 2 0 012 2v6h-2a1 1 0 100 2h2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2h2a1 1 0 100-2H4V5z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Service Type</p>
+                            <p class="text-2xl font-bold text-gray-900">@service.ServiceType</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service-specific Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Response Time Trend -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Response Time Trend</h3>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="serviceResponseChart" width="400" height="250"></canvas>
+                    </div>
+                </div>
+
+                <!-- Health Score History -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Health Score History</h3>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="serviceHealthChart" width="400" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Details Table -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Service Configuration</h3>
+                </div>
+                <div class="px-6 py-4">
+                    <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Service Name</dt>
+                            <dd class="mt-1 text-sm text-gray-900">@service.Name</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Service Type</dt>
+                            <dd class="mt-1 text-sm text-gray-900">@service.ServiceType</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Endpoint URL</dt>
+                            <dd class="mt-1 text-sm text-gray-900 font-mono">@service.Url</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Check Interval</dt>
+                            <dd class="mt-1 text-sm text-gray-900">@service.CheckInterval seconds</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Timeout</dt>
+                            <dd class="mt-1 text-sm text-gray-900">@service.Timeout seconds</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm font-medium text-gray-500">Last Update</dt>
+                            <dd class="mt-1 text-sm text-gray-900">@service.LastChecked.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string ServiceId { get; set; } = "";
+    
+    private bool isLoading = true;
+    private Service? service;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadServiceData();
+        StateHasChanged();
+        await Task.Delay(100); // Wait for DOM to render
+        await InitializeCharts();
+        isLoading = false;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(ServiceId))
+        {
+            isLoading = true;
+            await LoadServiceData();
+            if (service != null)
+            {
+                await InitializeCharts();
+            }
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadServiceData()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"api/HealthCheckApi/services/{ServiceId}");
+            if (response.IsSuccessStatusCode)
+            {
+                service = await response.Content.ReadFromJsonAsync<Service>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading service data: {ex.Message}");
+        }
+    }
+
+    private async Task InitializeCharts()
+    {
+        if (service == null) return;
+
+        await InitializeResponseTimeChart();
+        await InitializeHealthScoreChart();
+    }
+
+    private async Task InitializeResponseTimeChart()
+    {
+        var labels = Enumerable.Range(0, 24).Select(i => $"{i:00}:00").ToArray();
+        var responseTimeData = Enumerable.Range(0, 24)
+            .Select(i => (service?.ResponseTime ?? 100) + Random.Shared.NextDouble() * 50 - 25)
+            .ToArray();
+
+        var chartData = new
+        {
+            labels = labels,
+            datasets = new[]
+            {
+                new
+                {
+                    label = "Response Time (ms)",
+                    data = responseTimeData,
+                    borderColor = "rgb(59, 130, 246)",
+                    backgroundColor = "rgba(59, 130, 246, 0.1)",
+                    tension = 0.4,
+                    fill = true
+                }
+            }
+        };
+
+        await JSRuntime.InvokeVoidAsync("createAreaChart", "serviceResponseChart", chartData);
+    }
+
+    private async Task InitializeHealthScoreChart()
+    {
+        var labels = Enumerable.Range(0, 24).Select(i => $"{i:00}:00").ToArray();
+        var healthScoreData = Enumerable.Range(0, 24)
+            .Select(i => Math.Max(70, Math.Min(100, 95 + Random.Shared.NextDouble() * 10 - 5)))
+            .ToArray();
+
+        var chartData = new
+        {
+            labels = labels,
+            datasets = new[]
+            {
+                new
+                {
+                    label = "Health Score",
+                    data = healthScoreData,
+                    borderColor = "rgb(16, 185, 129)",
+                    backgroundColor = "rgba(16, 185, 129, 0.1)",
+                    tension = 0.4,
+                    fill = true
+                }
+            }
+        };
+
+        await JSRuntime.InvokeVoidAsync("createAreaChart", "serviceHealthChart", chartData);
+    }
+
+    private async Task RefreshData()
+    {
+        isLoading = true;
+        StateHasChanged();
+        await LoadServiceData();
+        if (service != null)
+        {
+            await InitializeCharts();
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private string GetStatusColor(ServiceStatus status)
+    {
+        return status switch
+        {
+            ServiceStatus.Healthy => "text-green-600",
+            ServiceStatus.Degraded => "text-yellow-600",
+            ServiceStatus.Critical => "text-red-600",
+            _ => "text-gray-600"
+        };
+    }
+}

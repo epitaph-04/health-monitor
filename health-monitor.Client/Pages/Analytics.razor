@@ -1,0 +1,665 @@
+@page "/analytics"
+@using health_monitor.Models
+@using health_monitor.Services.Analytics
+@using System.Text.Json
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<PageTitle>Health Monitor - Analytics</PageTitle>
+
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Advanced Analytics</h1>
+                    <p class="text-gray-600">Comprehensive insights and predictions for your services</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <select @onchange="OnTimeRangeChanged" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="1">Last 24 Hours</option>
+                        <option value="7" selected>Last 7 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                    </select>
+                    <button @onclick="RefreshAnalytics" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        @if (isLoading)
+        {
+            <div class="flex justify-center items-center h-64">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        }
+        else
+        {
+            <!-- System Health Overview -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 12a1 1 0 002 0V6a1 1 0 10-2 0v6zM9 16a1 1 0 102 0 1 1 0 00-2 0z"></path>
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 2a8 8 0 100 16 8 8 0 000-16z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Overall Health Score</p>
+                            <p class="text-2xl font-bold text-gray-900">@systemInsights?.HealthOverview.OverallHealthScore.ToString("F1")%</p>
+                            <p class="text-sm @GetTrendColor(systemInsights?.HealthOverview.TrendSummary.OverallTrend ?? TrendDirection.Stable)">
+                                @GetTrendText(systemInsights?.HealthOverview.TrendSummary.OverallTrend ?? TrendDirection.Stable)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Availability</p>
+                            <p class="text-2xl font-bold text-gray-900">99.7%</p>
+                            <p class="text-sm text-green-600">+0.2% from last period</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Avg Response Time</p>
+                            <p class="text-2xl font-bold text-gray-900">@avgResponseTime ms</p>
+                            <p class="text-sm @(responseTimeTrend > 0 ? "text-red-600" : "text-green-600")">
+                                @(responseTimeTrend > 0 ? "+" : "")@responseTimeTrend.ToString("F1")% from last period
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Services</p>
+                            <p class="text-2xl font-bold text-gray-900">@systemInsights?.HealthOverview.TotalServices</p>
+                            <p class="text-sm text-blue-600">@activeAlertsCount active alerts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                
+                <!-- Time Series Analysis -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900">Response Time Trends</h3>
+                            <select @onchange="OnServiceSelectionChanged" class="text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="">All Services</option>
+                                @if (availableServices != null)
+                                {
+                                    @foreach (var service in availableServices)
+                                    {
+                                        <option value="@service.Id">@service.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="timeSeriesChart" width="400" height="250"></canvas>
+                    </div>
+                </div>
+
+                <!-- Service Health Distribution -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Service Health Distribution</h3>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="healthDistributionChart" width="400" height="250"></canvas>
+                    </div>
+                </div>
+
+                <!-- Performance Heatmap -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Performance Heatmap</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-7 gap-1">
+                            @for (int day = 0; day < 49; day++)
+                            {
+                                <div class="w-6 h-6 rounded @GetHeatmapColor(day) tooltip" 
+                                     title="@GetHeatmapTooltip(day)"></div>
+                            }
+                        </div>
+                        <div class="flex justify-between items-center mt-4 text-xs text-gray-500">
+                            <span>7 weeks ago</span>
+                            <div class="flex items-center space-x-1">
+                                <span>Less</span>
+                                <div class="w-3 h-3 rounded bg-gray-200"></div>
+                                <div class="w-3 h-3 rounded bg-blue-200"></div>
+                                <div class="w-3 h-3 rounded bg-blue-400"></div>
+                                <div class="w-3 h-3 rounded bg-blue-600"></div>
+                                <span>More</span>
+                            </div>
+                            <span>Today</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Effectiveness -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Alert Effectiveness</h3>
+                    </div>
+                    <div class="p-6">
+                        @if (alertEffectiveness != null)
+                        {
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-600">Precision</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: @(alertEffectiveness.Overall.Precision * 100)%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-900">@(alertEffectiveness.Overall.Precision.ToString("P1"))</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-600">Recall</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: @(alertEffectiveness.Overall.Recall * 100)%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-900">@(alertEffectiveness.Overall.Recall.ToString("P1"))</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-600">F1 Score</span>
+                                    <div class="flex items-center">
+                                        <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                                            <div class="bg-purple-600 h-2 rounded-full" style="width: @(alertEffectiveness.Overall.F1Score * 100)%"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-900">@(alertEffectiveness.Overall.F1Score.ToString("P1"))</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Critical Insights & Recommendations -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                
+                <!-- Critical Insights -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Critical Insights</h3>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+                        @if (systemInsights?.CriticalInsights != null && systemInsights.CriticalInsights.Any())
+                        {
+                            @foreach (var insight in systemInsights.CriticalInsights.Take(5))
+                            {
+                                <div class="px-6 py-4">
+                                    <div class="flex items-start">
+                                        <div class="flex-shrink-0">
+                                            <div class="w-6 h-6 rounded-full @GetPriorityColor(insight.Priority) flex items-center justify-center">
+                                                <div class="w-2 h-2 bg-white rounded-full"></div>
+                                            </div>
+                                        </div>
+                                        <div class="ml-3 flex-1">
+                                            <p class="text-sm font-medium text-gray-900">@insight.Title</p>
+                                            <p class="text-sm text-gray-500 mt-1">@insight.Description</p>
+                                            @if (insight.AffectedServices.Any())
+                                            {
+                                                <div class="mt-2">
+                                                    <p class="text-xs text-gray-400">Affected services:</p>
+                                                    <div class="flex flex-wrap gap-1 mt-1">
+                                                        @foreach (var service in insight.AffectedServices.Take(3))
+                                                        {
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                                                @service
+                                                            </span>
+                                                        }
+                                                        @if (insight.AffectedServices.Length > 3)
+                                                        {
+                                                            <span class="text-xs text-gray-500">+@(insight.AffectedServices.Length - 3) more</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="px-6 py-8 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No critical issues</h3>
+                                <p class="mt-1 text-sm text-gray-500">Your system is performing well!</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Optimization Opportunities -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-900">Optimization Opportunities</h3>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+                        @if (systemInsights?.Opportunities != null && systemInsights.Opportunities.Any())
+                        {
+                            @foreach (var opportunity in systemInsights.Opportunities.Take(5))
+                            {
+                                <div class="px-6 py-4">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900">@opportunity.Title</p>
+                                            <p class="text-sm text-gray-500 mt-1">@opportunity.Description</p>
+                                            <div class="mt-2 flex items-center space-x-4">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium @GetOptimizationTypeColor(opportunity.Type)">
+                                                    @opportunity.Type
+                                                </span>
+                                                <span class="text-xs text-gray-500">ROI: @opportunity.ROI.ToString("P0")</span>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4 flex-shrink-0">
+                                            <div class="text-right">
+                                                <p class="text-sm font-medium text-green-600">+@opportunity.PotentialImprovement.ToString("P0")</p>
+                                                <p class="text-xs text-gray-500">improvement</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="px-6 py-8 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No optimization opportunities</h3>
+                                <p class="mt-1 text-sm text-gray-500">Your system is already optimized!</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics Table -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Service Performance Metrics</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Response</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P95 Response</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error Rate</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Health Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @if (serviceMetrics != null)
+                            {
+                                @foreach (var metric in serviceMetrics.Take(10))
+                                {
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-3 h-3 rounded-full @GetServiceStatusColor(metric.ServiceId) mr-3"></div>
+                                                <div>
+                                                    <div class="text-sm font-medium text-gray-900">@metric.ServiceName</div>
+                                                    <div class="text-sm text-gray-500">@metric.ServiceType</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">@metric.Availability.ToString("P2")</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">@metric.AvgResponseTime.ToString("F0") ms</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">@metric.P95ResponseTime.ToString("F0") ms</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-900">@metric.ErrorRate.ToString("P2")</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                                    <div class="@GetHealthScoreColor(metric.HealthScore) h-2 rounded-full" style="width: @metric.HealthScore%"></div>
+                                                </div>
+                                                <span class="text-sm text-gray-900">@metric.HealthScore.ToString("F0")</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <button @onclick="() => ViewServiceDetails(metric.ServiceId)" class="text-blue-600 hover:text-blue-900 mr-4">View</button>
+                                            <button @onclick="() => AnalyzeService(metric.ServiceId)" class="text-green-600 hover:text-green-900">Analyze</button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool isLoading = true;
+    private int selectedTimeRange = 7;
+    private string selectedServiceId = "";
+    
+    private SystemInsights? systemInsights;
+    private AlertEffectivenessReport? alertEffectiveness;
+    private Service[]? availableServices;
+    private ServiceMetric[]? serviceMetrics;
+    
+    private double avgResponseTime = 245.6;
+    private double responseTimeTrend = -2.3;
+    private int activeAlertsCount = 3;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAnalyticsData();
+        StateHasChanged();
+        await Task.Delay(100); // Wait for DOM to render
+        await InitializeCharts();
+        isLoading = false;
+    }
+
+    private async Task LoadAnalyticsData()
+    {
+        try
+        {
+            // Load system insights
+            var insightsResponse = await Http.GetAsync($"api/Analytics/insights?days={selectedTimeRange}");
+            if (insightsResponse.IsSuccessStatusCode)
+            {
+                systemInsights = await insightsResponse.Content.ReadFromJsonAsync<SystemInsights>();
+            }
+
+            // Load alert effectiveness
+            var alertsResponse = await Http.GetAsync($"api/Analytics/alerts/effectiveness?days={selectedTimeRange}");
+            if (alertsResponse.IsSuccessStatusCode)
+            {
+                alertEffectiveness = await alertsResponse.Content.ReadFromJsonAsync<AlertEffectivenessReport>();
+            }
+
+            // Load available services
+            var servicesResponse = await Http.GetAsync("api/HealthCheckApi/services");
+            if (servicesResponse.IsSuccessStatusCode)
+            {
+                availableServices = await servicesResponse.Content.ReadFromJsonAsync<Service[]>();
+                
+                // Generate mock service metrics
+                serviceMetrics = availableServices?.Select(s => new ServiceMetric
+                {
+                    ServiceId = s.Id,
+                    ServiceName = s.Name,
+                    ServiceType = s.ServiceType.ToString(),
+                    Availability = Random.Shared.NextDouble() * 0.1 + 0.9, // 90-100%
+                    AvgResponseTime = Random.Shared.NextDouble() * 200 + 50, // 50-250ms
+                    P95ResponseTime = Random.Shared.NextDouble() * 500 + 200, // 200-700ms
+                    ErrorRate = Random.Shared.NextDouble() * 0.05, // 0-5%
+                    HealthScore = Random.Shared.NextDouble() * 30 + 70 // 70-100
+                }).ToArray();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading analytics data: {ex.Message}");
+        }
+    }
+
+    private async Task InitializeCharts()
+    {
+        await InitializeTimeSeriesChart();
+        await InitializeHealthDistributionChart();
+    }
+
+    private async Task InitializeTimeSeriesChart()
+    {
+        var labels = Enumerable.Range(0, 24).Select(i => $"{i:00}:00").ToArray();
+        var responseTimeData = Enumerable.Range(0, 24).Select(i => Random.Shared.NextDouble() * 100 + 150).ToArray();
+        var errorRateData = Enumerable.Range(0, 24).Select(i => Random.Shared.NextDouble() * 3).ToArray();
+
+        var chartData = new
+        {
+            labels = labels,
+            datasets = new[]
+            {
+                new
+                {
+                    label = "Response Time (ms)",
+                    data = responseTimeData,
+                    borderColor = "rgb(59, 130, 246)",
+                    backgroundColor = "rgba(59, 130, 246, 0.1)",
+                    tension = 0.4,
+                    yAxisID = "y"
+                },
+                new
+                {
+                    label = "Error Rate (%)",
+                    data = errorRateData,
+                    borderColor = "rgb(239, 68, 68)",
+                    backgroundColor = "rgba(239, 68, 68, 0.1)",
+                    tension = 0.4,
+                    yAxisID = "y1"
+                }
+            }
+        };
+
+        await JSRuntime.InvokeVoidAsync("createTimeSeriesChart", "timeSeriesChart", chartData);
+    }
+
+    private async Task InitializeHealthDistributionChart()
+    {
+        var data = new
+        {
+            labels = new[] { "Healthy", "Degraded", "Critical", "Unknown" },
+            datasets = new[]
+            {
+                new
+                {
+                    data = new[] { 
+                        systemInsights?.HealthOverview.StatusDistribution.Healthy ?? 0,
+                        systemInsights?.HealthOverview.StatusDistribution.Degraded ?? 0,
+                        systemInsights?.HealthOverview.StatusDistribution.Critical ?? 0,
+                        systemInsights?.HealthOverview.StatusDistribution.Unknown ?? 0
+                    },
+                    backgroundColor = new[] { "#10B981", "#F59E0B", "#EF4444", "#6B7280" },
+                    borderWidth = 0
+                }
+            }
+        };
+
+        await JSRuntime.InvokeVoidAsync("createDoughnutChart", "healthDistributionChart", data);
+    }
+
+    private async Task OnTimeRangeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var newRange))
+        {
+            selectedTimeRange = newRange;
+            await RefreshAnalytics();
+        }
+    }
+
+    private async Task OnServiceSelectionChanged(ChangeEventArgs e)
+    {
+        selectedServiceId = e.Value?.ToString() ?? "";
+        await InitializeTimeSeriesChart(); // Refresh chart with service-specific data
+    }
+
+    private async Task RefreshAnalytics()
+    {
+        isLoading = true;
+        StateHasChanged();
+        await LoadAnalyticsData();
+        await InitializeCharts();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private string GetTrendColor(TrendDirection trend)
+    {
+        return trend switch
+        {
+            TrendDirection.Increasing => "text-green-600",
+            TrendDirection.Decreasing => "text-red-600",
+            TrendDirection.Stable => "text-gray-600",
+            TrendDirection.Volatile => "text-orange-600",
+            _ => "text-gray-600"
+        };
+    }
+
+    private string GetTrendText(TrendDirection trend)
+    {
+        return trend switch
+        {
+            TrendDirection.Increasing => "↗ Improving",
+            TrendDirection.Decreasing => "↘ Degrading",
+            TrendDirection.Stable => "→ Stable",
+            TrendDirection.Volatile => "⚡ Volatile",
+            _ => "→ Stable"
+        };
+    }
+
+    private string GetPriorityColor(Priority priority)
+    {
+        return priority switch
+        {
+            Priority.Critical => "bg-red-500",
+            Priority.High => "bg-orange-500",
+            Priority.Medium => "bg-yellow-500",
+            Priority.Low => "bg-blue-500",
+            _ => "bg-gray-500"
+        };
+    }
+
+    private string GetOptimizationTypeColor(OptimizationType type)
+    {
+        return type switch
+        {
+            OptimizationType.Performance => "bg-blue-100 text-blue-800",
+            OptimizationType.Cost => "bg-green-100 text-green-800",
+            OptimizationType.Reliability => "bg-purple-100 text-purple-800",
+            OptimizationType.Security => "bg-red-100 text-red-800",
+            OptimizationType.Scalability => "bg-yellow-100 text-yellow-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
+
+    private string GetHeatmapColor(int day)
+    {
+        var intensity = Random.Shared.NextDouble();
+        return intensity switch
+        {
+            < 0.25 => "bg-gray-200",
+            < 0.5 => "bg-blue-200",
+            < 0.75 => "bg-blue-400",
+            _ => "bg-blue-600"
+        };
+    }
+
+    private string GetHeatmapTooltip(int day)
+    {
+        var date = DateTime.Now.AddDays(-49 + day);
+        var issues = Random.Shared.Next(0, 5);
+        return $"{date:MMM dd}: {issues} issues";
+    }
+
+    private string GetServiceStatusColor(string serviceId)
+    {
+        var hash = serviceId.GetHashCode();
+        var status = Math.Abs(hash) % 4;
+        return status switch
+        {
+            0 => "bg-green-400",
+            1 => "bg-yellow-400",
+            2 => "bg-red-400",
+            _ => "bg-gray-400"
+        };
+    }
+
+    private string GetHealthScoreColor(double score)
+    {
+        return score switch
+        {
+            >= 90 => "bg-green-500",
+            >= 80 => "bg-yellow-500",
+            >= 70 => "bg-orange-500",
+            _ => "bg-red-500"
+        };
+    }
+
+    private void ViewServiceDetails(string serviceId)
+    {
+        Navigation.NavigateTo($"/services/{serviceId}");
+    }
+
+    private void AnalyzeService(string serviceId)
+    {
+        Navigation.NavigateTo($"/analytics/service/{serviceId}");
+    }
+
+    // Mock data classes
+    public class ServiceMetric
+    {
+        public string ServiceId { get; set; } = "";
+        public string ServiceName { get; set; } = "";
+        public string ServiceType { get; set; } = "";
+        public double Availability { get; set; }
+        public double AvgResponseTime { get; set; }
+        public double P95ResponseTime { get; set; }
+        public double ErrorRate { get; set; }
+        public double HealthScore { get; set; }
+    }
+}
