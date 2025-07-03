@@ -29,6 +29,9 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<health_monitor.Services.Intelligence.IPredictiveAnalysisService, health_monitor.Services.Intelligence.PredictiveAnalysisService>();
 builder.Services.AddSingleton<health_monitor.Services.Recovery.IRecoveryService, health_monitor.Services.Recovery.RecoveryService>();
 
+// Advanced Analytics Services
+builder.Services.AddSingleton<health_monitor.Services.Analytics.IAdvancedAnalyticsService, health_monitor.Services.Analytics.AdvancedAnalyticsService>();
+
 builder.Services.AddHostedService<HealthCheckServiceOrchestrator>();
 builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();
