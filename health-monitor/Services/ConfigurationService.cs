@@ -33,9 +33,9 @@ public static class ConfigurationService
                             ServiceType.Http => new HttpHealthCheckService(
                                 provider.GetRequiredService<HttpClient>(), application, provider.GetRequiredService<ILogger<HttpHealthCheckService>>()),
                             ServiceType.Db => new DbHealthCheckService(application),
-                            ServiceType.Sns => new SnsHealthCheckService(application),
-                            ServiceType.Sqs => new SqsHealthCheckService(application),
-                            ServiceType.Rabbitmq => new RabbitmqHealthCheckService(application),
+                            ServiceType.Sns => new SnsHealthCheckService(application, provider.GetRequiredService<ILogger<SnsHealthCheckService>>()),
+                            ServiceType.Sqs => new SqsHealthCheckService(application, provider.GetRequiredService<ILogger<SqsHealthCheckService>>()),
+                            ServiceType.Rabbitmq => new RabbitmqHealthCheckService(application, provider.GetRequiredService<ILogger<RabbitmqHealthCheckService>>()),
                             _ => throw new ArgumentOutOfRangeException()
                         };
                     });

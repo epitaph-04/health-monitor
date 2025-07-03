@@ -1,6 +1,9 @@
 using health_monitor.Client.Model;
 using health_monitor.Hub;
 using health_monitor.Services;
+using health_monitor.Services.Alerting;
+using health_monitor.Services.Dependencies;
+using health_monitor.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace health_monitor.BackgroundServices;
@@ -8,6 +11,8 @@ namespace health_monitor.BackgroundServices;
 public class HealthCheckServiceOrchestrator(
     IHubContext<NotificationHub, INotificationClient> context,
     IEnumerable<IHealthCheckService> healthCheckServices,
+    IAlertingService alertingService,
+    IDependencyService dependencyService,
     ILogger<HealthCheckServiceOrchestrator> logger
     ) : BackgroundService
 {
