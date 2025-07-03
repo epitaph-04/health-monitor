@@ -20,6 +20,15 @@ builder.Services.AddSingleton<StatusService>();
 builder.Services.AddSingleton<health_monitor.Services.Alerting.IAlertingService, health_monitor.Services.Alerting.AlertingService>();
 builder.Services.AddSingleton<health_monitor.Services.Dependencies.IDependencyService, health_monitor.Services.Dependencies.DependencyService>();
 
+// Phase 2 Services
+builder.Services.AddSingleton<health_monitor.Services.Metrics.IMetricsService, health_monitor.Services.Metrics.MetricsService>();
+builder.Services.AddSingleton<health_monitor.Services.Maintenance.IMaintenanceService, health_monitor.Services.Maintenance.MaintenanceService>();
+builder.Services.AddControllers();
+
+// Phase 3 Services - Advanced Intelligence & Automation
+builder.Services.AddSingleton<health_monitor.Services.Intelligence.IPredictiveAnalysisService, health_monitor.Services.Intelligence.PredictiveAnalysisService>();
+builder.Services.AddSingleton<health_monitor.Services.Recovery.IRecoveryService, health_monitor.Services.Recovery.RecoveryService>();
+
 builder.Services.AddHostedService<HealthCheckServiceOrchestrator>();
 builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();
@@ -52,4 +61,5 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(health_monitor.Client._Imports).Assembly);
 app.MapHealthChecks("/health");
+app.MapControllers();
 app.Run();

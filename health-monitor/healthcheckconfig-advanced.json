@@ -1,0 +1,130 @@
+[
+  {
+    "Id": "cf-backend",
+    "Name": "CF Backend API",
+    "Type": "Http",
+    "Target": "http://campaign-workflow-backend/campaign-workflow/v1/health/liveness",
+    "ExpectedResponseCode": 200,
+    "Method": "GET",
+    "TimeoutSeconds": 10,
+    "Tag": ["API", "Production", "Critical"]
+  },
+  {
+    "Id": "cf-scheduler",
+    "Name": "CF Scheduler Service",
+    "Type": "Http",
+    "Target": "http://campaign-flow-scheduler/health/liveness",
+    "ExpectedResponseCode": 200,
+    "Method": "GET",
+    "TimeoutSeconds": 10,
+    "Tag": ["API", "Production", "Critical"]
+  },
+  {
+    "Id": "audit-logger",
+    "Name": "Audit Logger Service",
+    "Type": "Http",
+    "Target": "http://audit-logger/health/liveness",
+    "ExpectedResponseCode": 200,
+    "Method": "GET",
+    "TimeoutSeconds": 10,
+    "Tag": ["API", "Production"]
+  },
+  {
+    "Id": "main-database",
+    "Name": "Main PostgreSQL Database",
+    "Type": "Db",
+    "Target": "Host=localhost;Database=healthmonitor;Username=postgres;Password=secret",
+    "Query": "SELECT 1",
+    "TimeoutSeconds": 15,
+    "Tag": ["Database", "Production", "Critical"]
+  },
+  {
+    "Id": "redis-cache",
+    "Name": "Redis Cache Cluster",
+    "Type": "Db",
+    "Target": "localhost:6379",
+    "Query": "PING",
+    "TimeoutSeconds": 5,
+    "Tag": ["Cache", "Production"]
+  },
+  {
+    "Id": "notification-queue",
+    "Name": "AWS SQS Notification Queue",
+    "Type": "Sqs",
+    "Target": "https://sqs.us-east-1.amazonaws.com/123456789/notifications",
+    "TimeoutSeconds": 10,
+    "Tag": ["Queue", "AWS", "Production"]
+  },
+  {
+    "Id": "alert-topic",
+    "Name": "AWS SNS Alert Topic",
+    "Type": "Sns",
+    "Target": "arn:aws:sns:us-east-1:123456789:alerts",
+    "TimeoutSeconds": 10,
+    "Tag": ["Topic", "AWS", "Production"]
+  },
+  {
+    "Id": "message-broker",
+    "Name": "RabbitMQ Message Broker",
+    "Type": "Rabbitmq",
+    "Target": "amqp://guest:guest@localhost:5672/",
+    "TimeoutSeconds": 15,
+    "Tag": ["MessageBroker", "Production", "Critical"]
+  },
+  {
+    "Id": "api-certificate",
+    "Name": "API Gateway SSL Certificate",
+    "Type": "Certificate",
+    "Target": "https://api.example.com",
+    "TimeoutSeconds": 10,
+    "Tag": ["Security", "Certificate", "Production"]
+  },
+  {
+    "Id": "web-certificate",
+    "Name": "Web Portal SSL Certificate", 
+    "Type": "Certificate",
+    "Target": "https://portal.example.com",
+    "TimeoutSeconds": 10,
+    "Tag": ["Security", "Certificate", "Production"]
+  },
+  {
+    "Id": "server-resources",
+    "Name": "Application Server Resources",
+    "Type": "Resource",
+    "Target": "disk,memory,cpu",
+    "TimeoutSeconds": 5,
+    "Tag": ["Infrastructure", "Resources", "Production"]
+  },
+  {
+    "Id": "db-resources",
+    "Name": "Database Server Resources",
+    "Type": "Resource", 
+    "Target": "disk,memory",
+    "TimeoutSeconds": 5,
+    "Tag": ["Infrastructure", "Database", "Production"]
+  },
+  {
+    "Id": "external-api-connectivity",
+    "Name": "External API Network Check",
+    "Type": "Network",
+    "Target": "api.external-service.com:443",
+    "TimeoutSeconds": 10,
+    "Tag": ["Network", "External", "Production"]
+  },
+  {
+    "Id": "database-connectivity",
+    "Name": "Database Network Check",
+    "Type": "Network",
+    "Target": "db.internal.com:5432",
+    "TimeoutSeconds": 8,
+    "Tag": ["Network", "Database", "Production"]
+  },
+  {
+    "Id": "cdn-connectivity",
+    "Name": "CDN Network Check",
+    "Type": "Network",
+    "Target": "cdn.example.com:80",
+    "TimeoutSeconds": 5,
+    "Tag": ["Network", "CDN", "Production"]
+  }
+]
