@@ -15,6 +15,11 @@ await builder.Services.ConfigureHealthCheckService(builder.Environment, "healthc
 builder.Services.AddCors();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<StatusService>();
+
+// Phase 1 Services
+builder.Services.AddSingleton<health_monitor.Services.Alerting.IAlertingService, health_monitor.Services.Alerting.AlertingService>();
+builder.Services.AddSingleton<health_monitor.Services.Dependencies.IDependencyService, health_monitor.Services.Dependencies.DependencyService>();
+
 builder.Services.AddHostedService<HealthCheckServiceOrchestrator>();
 builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();

@@ -6,5 +6,9 @@ public enum ServiceType
     Db,
     Sns,
     Sqs,
-    Rabbitmq
+    Rabbitmq,
+    Certificate,
+    Resource,
+    Network,
+    CustomScript
 }
