@@ -1,4 +1,4 @@
-using health_monitor.Client.Model;
+using health_monitor.Models;
 
 namespace health_monitor.Services;
 

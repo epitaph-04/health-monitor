@@ -1,7 +1,6 @@
 using health_monitor.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using health_monitor.Client.Model;
 
 namespace health_monitor.Services;
 
@@ -33,9 +32,12 @@ public static class ConfigurationService
                             ServiceType.Http => new HttpHealthCheckService(
                                 provider.GetRequiredService<HttpClient>(), application, provider.GetRequiredService<ILogger<HttpHealthCheckService>>()),
                             ServiceType.Db => new DbHealthCheckService(application),
-                            ServiceType.Sns => new SnsHealthCheckService(application),
-                            ServiceType.Sqs => new SqsHealthCheckService(application),
-                            ServiceType.Rabbitmq => new RabbitmqHealthCheckService(application),
+                            ServiceType.Sns => new SnsHealthCheckService(application, provider.GetRequiredService<ILogger<SnsHealthCheckService>>()),
+                            ServiceType.Sqs => new SqsHealthCheckService(application, provider.GetRequiredService<ILogger<SqsHealthCheckService>>()),
+                            ServiceType.Rabbitmq => new RabbitmqHealthCheckService(application, provider.GetRequiredService<ILogger<RabbitmqHealthCheckService>>()),
+                            ServiceType.Certificate => new health_monitor.Services.AdvancedHealthChecks.CertificateHealthCheckService(application, provider.GetRequiredService<ILogger<health_monitor.Services.AdvancedHealthChecks.CertificateHealthCheckService>>()),
+                            ServiceType.Resource => new health_monitor.Services.AdvancedHealthChecks.ResourceHealthCheckService(application, provider.GetRequiredService<ILogger<health_monitor.Services.AdvancedHealthChecks.ResourceHealthCheckService>>()),
+                            ServiceType.Network => new health_monitor.Services.AdvancedHealthChecks.NetworkHealthCheckService(application, provider.GetRequiredService<ILogger<health_monitor.Services.AdvancedHealthChecks.NetworkHealthCheckService>>()),
                             _ => throw new ArgumentOutOfRangeException()
                         };
                     });

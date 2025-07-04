@@ -1,4 +1,4 @@
-namespace health_monitor.Client.Model;
+namespace health_monitor.Models;
 
 public class Service
 {
