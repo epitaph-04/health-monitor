@@ -41,7 +41,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Healthy Services</dt>
-                            <dd class="text-lg font-medium text-gray-900">@healthyCount</dd>
+                            <dd class="text-lg font-medium text-gray-900">@_healthyCount</dd>
                         </dl>
                     </div>
                 </div>
@@ -59,7 +59,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Degraded Services</dt>
-                            <dd class="text-lg font-medium text-gray-900">@degradedCount</dd>
+                            <dd class="text-lg font-medium text-gray-900">@_degradedCount</dd>
                         </dl>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Critical Services</dt>
-                            <dd class="text-lg font-medium text-gray-900">@criticalCount</dd>
+                            <dd class="text-lg font-medium text-gray-900">@_criticalCount</dd>
                         </dl>
                     </div>
                 </div>
@@ -95,7 +95,7 @@
                     <div class="ml-5 w-0 flex-1">
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Overall Health Score</dt>
-                            <dd class="text-lg font-medium text-gray-900">@(overallHealthScore.ToString("F1"))%</dd>
+                            <dd class="text-lg font-medium text-gray-900">@(_overallHealthScore.ToString("F1"))%</dd>
                         </dl>
                     </div>
                 </div>
@@ -174,10 +174,10 @@
                         <h3 class="text-lg font-medium text-gray-900">Recent Alerts</h3>
                     </div>
                     <div class="px-6 py-4">
-                        @if (recentAlerts.Any())
+                        @if (_recentAlerts.Any())
                         {
                             <div class="space-y-3">
-                                @foreach (var alert in recentAlerts.Take(5))
+                                @foreach (var alert in _recentAlerts.Take(5))
                                 {
                                     <div class="flex items-start space-x-3">
                                         <div class="flex-shrink-0">
@@ -216,29 +216,31 @@
 @code {
     private HubConnection? _hubConnection;
     private Service[]? _services;
-    private bool _isConnected = false;
+    private bool _isConnected;
     private DateTime _lastUpdated = DateTime.Now;
     
-    private int healthyCount = 0;
-    private int degradedCount = 0;
-    private int criticalCount = 0;
-    private int unknownCount = 0;
-    private double overallHealthScore = 0;
+    private int _healthyCount;
+    private int _degradedCount;
+    private int _criticalCount;
+    private double _overallHealthScore;
     
-    private List<AlertInfo> recentAlerts = new();
-
+    private List<AlertInfo> _recentAlerts = new();
     protected override async Task OnInitializedAsync()
     {
         await LoadInitialData();
         await SetupSignalRConnection();
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
         await SetupHealthTrendChart();
+        StateHasChanged();
     }
 
     private async Task LoadInitialData()
     {
         try
         {
-            var response = await Http.GetAsync("api/HealthCheckApi/services");
+            var response = await Http.GetAsync(NavigationManager.ToAbsoluteUri("/api/HealthCheckApi/services"));
             if (response.IsSuccessStatusCode)
             {
                 _services = await response.Content.ReadFromJsonAsync<Service[]>();
@@ -246,13 +248,13 @@
             }
 
             // Load system insights
-            var insightsResponse = await Http.GetAsync("api/Analytics/insights?days=1");
+            var insightsResponse = await Http.GetAsync(NavigationManager.ToAbsoluteUri("/api/Analytics/insights?days=1"));
             if (insightsResponse.IsSuccessStatusCode)
             {
                 var insights = await insightsResponse.Content.ReadFromJsonAsync<SystemInsights>();
                 if (insights?.HealthOverview != null)
                 {
-                    overallHealthScore = insights.HealthOverview.OverallHealthScore;
+                    _overallHealthScore = insights.HealthOverview.OverallHealthScore;
                 }
             }
         }
@@ -299,17 +301,16 @@
     {
         if (_services == null) return;
 
-        healthyCount = _services.Count(s => s.LastCheckStatus.Status == Status.Healthy);
-        degradedCount = _services.Count(s => s.LastCheckStatus.Status == Status.Degraded);
-        criticalCount = _services.Count(s => s.LastCheckStatus.Status == Status.Critical);
-        unknownCount = _services.Count(s => s.LastCheckStatus.Status == Status.Unknown);
+        _healthyCount = _services.Count(s => s.LastCheckStatus.Status == Status.Healthy);
+        _degradedCount = _services.Count(s => s.LastCheckStatus.Status == Status.Degraded);
+        _criticalCount = _services.Count(s => s.LastCheckStatus.Status == Status.Critical);
         
-        overallHealthScore = _services.Length > 0 ? (double)healthyCount / _services.Length * 100 : 0;
+        _overallHealthScore = _services.Length > 0 ? (double)_healthyCount / _services.Length * 100 : 0;
     }
 
     private async Task SetupHealthTrendChart()
     {
-        await Task.Delay(500); // Wait for DOM to be ready
+        await Task.Delay(500);
         
         var chartData = new
         {
@@ -319,7 +320,7 @@
                 new
                 {
                     label = "Health Score",
-                    data = new[] { 95.2, 94.8, 96.1, 93.7, 95.8, 97.2, overallHealthScore },
+                    data = new[] { 95.2, 94.8, 96.1, 93.7, 95.8, 97.2, _overallHealthScore },
                     borderColor = "rgb(59, 130, 246)",
                     backgroundColor = "rgba(59, 130, 246, 0.1)",
                     tension = 0.4

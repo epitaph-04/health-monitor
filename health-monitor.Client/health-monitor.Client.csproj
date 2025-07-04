@@ -29,4 +29,8 @@
       <ProjectReference Include="..\health-monitor.Models\health-monitor.Models.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\js\analytics.js" />
+    </ItemGroup>
+
 </Project>

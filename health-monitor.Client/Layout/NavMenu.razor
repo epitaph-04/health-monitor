@@ -1,9 +1,9 @@
 ﻿@inject NavigationManager NavigationManager
 
 <nav class="flex items-center space-x-2 sm:space-x-4">
-    <NavLink href="" Match="NavLinkMatch.All">
+    <NavLink href="dashboard">
         <button id="navDashboard"
-                class="nav-button px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 @(NavigationManager.ToBaseRelativePath(NavigationManager.Uri) == "status" ? "bg-slate-700 hover:bg-slate-700 hover:text-white" : "bg-purple-600 text-white")">
+                class="nav-button px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 text-slate-300 @(NavigationManager.ToBaseRelativePath(NavigationManager.Uri) == "dashboard" ? "bg-purple-600 text-white" : "bg-slate-700 hover:bg-slate-700 hover:text-white")">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-text-align">
                 <line x1="12" y1="20" x2="12" y2="10"/>
                 <line x1="18" y1="20" x2="18" y2="4"/>

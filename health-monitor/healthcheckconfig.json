@@ -3,40 +3,40 @@
     "Id": "cf-backend",
     "Name": "CF Backend",
     "Type": "Http",
-    "Target": "http://campaign-workflow-backend/campaign-workflow/v1/health/liveness",
+    "Target": "https://google.com",
     "ExpectedResponseCode": 200,
     "Method": "GET",
     "TimeoutSeconds": 10,
-    "Tag": ["API", "Production"]
+    "Tag": ["API", "Alpha"]
   },
   {
     "Id": "cf-scheduler",
     "Name": "CF Scheduler",
     "Type": "Http",
-    "Target": "http://campaign-flow-scheduler/health/liveness",
+    "Target": "https://facebook.com",
     "ExpectedResponseCode": 200,
     "Method": "GET",
     "TimeoutSeconds": 10,
-    "Tag": ["API", "Production"]
+    "Tag": ["API", "Alpha"]
   },
   {
     "Id": "audit-logger",
     "Name": "Audit Logger",
     "Type": "Http",
-    "Target": "http://audit-logger/health/liveness",
+    "Target": "https://whatsapp.com",
     "ExpectedResponseCode": 200,
     "Method": "GET",
     "TimeoutSeconds": 10,
-    "Tag": ["API", "Production"]
+    "Tag": ["API", "Alpha"]
   },
   {
     "Id": "maf-notifier",
     "Name": "MAF Notifier",
     "Type": "Http",
-    "Target": "http://maf-notifier/health/liveness",
+    "Target": "https://linkedin.com",
     "ExpectedResponseCode": 200,
     "Method": "GET",
     "TimeoutSeconds": 10,
-    "Tag": ["API", "Production"]
+    "Tag": ["API", "Alpha"]
   }
 ]

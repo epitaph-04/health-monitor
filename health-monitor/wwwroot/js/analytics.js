@@ -1,14 +1,9 @@
-// Analytics Chart Functions for Health Monitor
-
-// Chart.js instances storage
 window.chartInstances = {};
 
-// Time Series Chart with dual Y-axes
 window.createTimeSeriesChart = function(canvasId, data) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
-    // Destroy existing chart if it exists
     if (window.chartInstances[canvasId]) {
         window.chartInstances[canvasId].destroy();
     }
@@ -114,12 +109,10 @@ window.createTimeSeriesChart = function(canvasId, data) {
     });
 };
 
-// Doughnut Chart for Health Distribution
 window.createDoughnutChart = function(canvasId, data) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
-    // Destroy existing chart if it exists
     if (window.chartInstances[canvasId]) {
         window.chartInstances[canvasId].destroy();
     }
@@ -186,12 +179,10 @@ window.createDoughnutChart = function(canvasId, data) {
     });
 };
 
-// Bar Chart for Performance Metrics
 window.createBarChart = function(canvasId, data) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
 
-    // Destroy existing chart if it exists
     if (window.chartInstances[canvasId]) {
         window.chartInstances[canvasId].destroy();
     }
@@ -239,7 +230,6 @@ window.createBarChart = function(canvasId, data) {
     });
 };
 
-// Scatter Plot for Correlation Analysis
 window.createScatterChart = function(canvasId, data) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -319,7 +309,6 @@ window.createScatterChart = function(canvasId, data) {
     });
 };
 
-// Heatmap visualization using Chart.js matrix
 window.createHeatmapChart = function(canvasId, data) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -410,7 +399,6 @@ window.createHeatmapChart = function(canvasId, data) {
     });
 };
 
-// Area Chart for Capacity Planning
 window.createAreaChart = function(canvasId, data) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -477,7 +465,6 @@ window.createAreaChart = function(canvasId, data) {
     });
 };
 
-// Multi-axis chart for complex metrics
 window.createMultiAxisChart = function(canvasId, data) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -552,7 +539,6 @@ window.createMultiAxisChart = function(canvasId, data) {
     });
 };
 
-// Update chart data dynamically
 window.updateChartData = function(canvasId, newData) {
     const chart = window.chartInstances[canvasId];
     if (chart) {
@@ -561,7 +547,6 @@ window.updateChartData = function(canvasId, newData) {
     }
 };
 
-// Destroy all charts
 window.destroyAllCharts = function() {
     Object.keys(window.chartInstances).forEach(canvasId => {
         if (window.chartInstances[canvasId]) {
@@ -571,7 +556,6 @@ window.destroyAllCharts = function() {
     });
 };
 
-// Real-time chart updates
 window.addDataPoint = function(canvasId, label, dataPoints) {
     const chart = window.chartInstances[canvasId];
     if (chart) {
@@ -592,7 +576,6 @@ window.addDataPoint = function(canvasId, label, dataPoints) {
     }
 };
 
-// Export chart as image
 window.exportChart = function(canvasId, filename) {
     const chart = window.chartInstances[canvasId];
     if (chart) {
@@ -604,14 +587,12 @@ window.exportChart = function(canvasId, filename) {
     }
 };
 
-// Resize all charts
 window.resizeCharts = function() {
     Object.values(window.chartInstances).forEach(chart => {
         chart.resize();
     });
 };
 
-// Initialize tooltips for heatmap
 window.initializeTooltips = function() {
     // Initialize any custom tooltips or interactive elements
     const tooltipElements = document.querySelectorAll('.tooltip');
@@ -650,7 +631,6 @@ window.initializeTooltips = function() {
     });
 };
 
-// Call tooltip initialization when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initializeTooltips);
 } else {
