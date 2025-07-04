@@ -1,9 +1,8 @@
-using health_monitor.Client.Model;
 using health_monitor.Hub;
+using health_monitor.Models;
 using health_monitor.Services;
 using health_monitor.Services.Alerting;
 using health_monitor.Services.Dependencies;
-using health_monitor.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace health_monitor.BackgroundServices;
@@ -81,8 +80,8 @@ public class HealthCheckServiceOrchestrator(
 
                 // Add dependency information
                 var dependencies = await dependencyService.GetDependenciesOf(healthCheckService.Id);
-                service.DependentServices = dependencies.Select(depId => 
-                    new Service { Id = depId, Name = depId }).ToList();
+                service.DependentServices.AddRange(dependencies.Select(depId => 
+                    new Service { Id = depId, Name = depId }));
 
                 services.Add(service);
                 await context.Clients.All.ReceiveNotification(service);

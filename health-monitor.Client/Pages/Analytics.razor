@@ -1,9 +1,7 @@
 @page "/analytics"
 @using health_monitor.Models
-@using health_monitor.Services.Analytics
-@using System.Text.Json
 @inject HttpClient Http
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 
 <PageTitle>Health Monitor - Analytics</PageTitle>
@@ -37,7 +35,7 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        @if (isLoading)
+        @if (_isLoading)
         {
             <div class="flex justify-center items-center h-64">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -57,9 +55,9 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Overall Health Score</p>
-                            <p class="text-2xl font-bold text-gray-900">@systemInsights?.HealthOverview.OverallHealthScore.ToString("F1")%</p>
-                            <p class="text-sm @GetTrendColor(systemInsights?.HealthOverview.TrendSummary.OverallTrend ?? TrendDirection.Stable)">
-                                @GetTrendText(systemInsights?.HealthOverview.TrendSummary.OverallTrend ?? TrendDirection.Stable)
+                            <p class="text-2xl font-bold text-gray-900">@_systemInsights?.HealthOverview.OverallHealthScore.ToString("F1")%</p>
+                            <p class="text-sm @GetTrendColor(_systemInsights?.HealthOverview.TrendSummary.OverallTrend ?? TrendDirection.Stable)">
+                                @GetTrendText(_systemInsights?.HealthOverview.TrendSummary.OverallTrend ?? TrendDirection.Stable)
                             </p>
                         </div>
                     </div>
@@ -89,9 +87,9 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Avg Response Time</p>
-                            <p class="text-2xl font-bold text-gray-900">@avgResponseTime ms</p>
-                            <p class="text-sm @(responseTimeTrend > 0 ? "text-red-600" : "text-green-600")">
-                                @(responseTimeTrend > 0 ? "+" : "")@responseTimeTrend.ToString("F1")% from last period
+                            <p class="text-2xl font-bold text-gray-900">@_avgResponseTime ms</p>
+                            <p class="text-sm @(_responseTimeTrend > 0 ? "text-red-600" : "text-green-600")">
+                                @(_responseTimeTrend > 0 ? "+" : "")@_responseTimeTrend.ToString("F1")% from last period
                             </p>
                         </div>
                     </div>
@@ -106,8 +104,8 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Total Services</p>
-                            <p class="text-2xl font-bold text-gray-900">@systemInsights?.HealthOverview.TotalServices</p>
-                            <p class="text-sm text-blue-600">@activeAlertsCount active alerts</p>
+                            <p class="text-2xl font-bold text-gray-900">@_systemInsights?.HealthOverview.TotalServices</p>
+                            <p class="text-sm text-blue-600">@_activeAlertsCount active alerts</p>
                         </div>
                     </div>
                 </div>
@@ -123,9 +121,9 @@
                             <h3 class="text-lg font-medium text-gray-900">Response Time Trends</h3>
                             <select @onchange="OnServiceSelectionChanged" class="text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                 <option value="">All Services</option>
-                                @if (availableServices != null)
+                                @if (_availableServices != null)
                                 {
-                                    @foreach (var service in availableServices)
+                                    @foreach (var service in _availableServices)
                                     {
                                         <option value="@service.Id">@service.Name</option>
                                     }
@@ -182,34 +180,34 @@
                         <h3 class="text-lg font-medium text-gray-900">Alert Effectiveness</h3>
                     </div>
                     <div class="p-6">
-                        @if (alertEffectiveness != null)
+                        @if (_alertEffectiveness != null)
                         {
                             <div class="space-y-4">
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm font-medium text-gray-600">Precision</span>
                                     <div class="flex items-center">
                                         <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                                            <div class="bg-green-600 h-2 rounded-full" style="width: @(alertEffectiveness.Overall.Precision * 100)%"></div>
+                                            <div class="bg-green-600 h-2 rounded-full" style="width: @(_alertEffectiveness.Overall.Precision * 100)%"></div>
                                         </div>
-                                        <span class="text-sm font-medium text-gray-900">@(alertEffectiveness.Overall.Precision.ToString("P1"))</span>
+                                        <span class="text-sm font-medium text-gray-900">@(_alertEffectiveness.Overall.Precision.ToString("P1"))</span>
                                     </div>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm font-medium text-gray-600">Recall</span>
                                     <div class="flex items-center">
                                         <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                                            <div class="bg-blue-600 h-2 rounded-full" style="width: @(alertEffectiveness.Overall.Recall * 100)%"></div>
+                                            <div class="bg-blue-600 h-2 rounded-full" style="width: @(_alertEffectiveness.Overall.Recall * 100)%"></div>
                                         </div>
-                                        <span class="text-sm font-medium text-gray-900">@(alertEffectiveness.Overall.Recall.ToString("P1"))</span>
+                                        <span class="text-sm font-medium text-gray-900">@(_alertEffectiveness.Overall.Recall.ToString("P1"))</span>
                                     </div>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="text-sm font-medium text-gray-600">F1 Score</span>
                                     <div class="flex items-center">
                                         <div class="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                                            <div class="bg-purple-600 h-2 rounded-full" style="width: @(alertEffectiveness.Overall.F1Score * 100)%"></div>
+                                            <div class="bg-purple-600 h-2 rounded-full" style="width: @(_alertEffectiveness.Overall.F1Score * 100)%"></div>
                                         </div>
-                                        <span class="text-sm font-medium text-gray-900">@(alertEffectiveness.Overall.F1Score.ToString("P1"))</span>
+                                        <span class="text-sm font-medium text-gray-900">@(_alertEffectiveness.Overall.F1Score.ToString("P1"))</span>
                                     </div>
                                 </div>
                             </div>
@@ -227,9 +225,9 @@
                         <h3 class="text-lg font-medium text-gray-900">Critical Insights</h3>
                     </div>
                     <div class="divide-y divide-gray-200">
-                        @if (systemInsights?.CriticalInsights != null && systemInsights.CriticalInsights.Any())
+                        @if (_systemInsights?.CriticalInsights != null && _systemInsights.CriticalInsights.Any())
                         {
-                            @foreach (var insight in systemInsights.CriticalInsights.Take(5))
+                            @foreach (var insight in _systemInsights.CriticalInsights.Take(5))
                             {
                                 <div class="px-6 py-4">
                                     <div class="flex items-start">
@@ -283,9 +281,9 @@
                         <h3 class="text-lg font-medium text-gray-900">Optimization Opportunities</h3>
                     </div>
                     <div class="divide-y divide-gray-200">
-                        @if (systemInsights?.Opportunities != null && systemInsights.Opportunities.Any())
+                        @if (_systemInsights?.Opportunities != null && _systemInsights.Opportunities.Any())
                         {
-                            @foreach (var opportunity in systemInsights.Opportunities.Take(5))
+                            @foreach (var opportunity in _systemInsights.Opportunities.Take(5))
                             {
                                 <div class="px-6 py-4">
                                     <div class="flex items-start justify-between">
@@ -342,9 +340,9 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            @if (serviceMetrics != null)
+                            @if (_serviceMetrics != null)
                             {
-                                @foreach (var metric in serviceMetrics.Take(10))
+                                @foreach (var metric in _serviceMetrics.Take(10))
                                 {
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -392,26 +390,26 @@
 </div>
 
 @code {
-    private bool isLoading = true;
-    private int selectedTimeRange = 7;
-    private string selectedServiceId = "";
+    private bool _isLoading = true;
+    private int _selectedTimeRange = 7;
+    private string _selectedServiceId = "";
     
-    private SystemInsights? systemInsights;
-    private AlertEffectivenessReport? alertEffectiveness;
-    private Service[]? availableServices;
-    private ServiceMetric[]? serviceMetrics;
+    private SystemInsights? _systemInsights;
+    private AlertEffectivenessReport? _alertEffectiveness;
+    private Service[]? _availableServices;
+    private ServiceMetric[]? _serviceMetrics;
     
-    private double avgResponseTime = 245.6;
-    private double responseTimeTrend = -2.3;
-    private int activeAlertsCount = 3;
+    private double _avgResponseTime = 245.6;
+    private double _responseTimeTrend = -2.3;
+    private int _activeAlertsCount = 3;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadAnalyticsData();
         StateHasChanged();
-        await Task.Delay(100); // Wait for DOM to render
+        await Task.Delay(100);
         await InitializeCharts();
-        isLoading = false;
+        _isLoading = false;
     }
 
     private async Task LoadAnalyticsData()
@@ -419,27 +417,27 @@
         try
         {
             // Load system insights
-            var insightsResponse = await Http.GetAsync($"api/Analytics/insights?days={selectedTimeRange}");
+            var insightsResponse = await Http.GetAsync($"api/Analytics/insights?days={_selectedTimeRange}");
             if (insightsResponse.IsSuccessStatusCode)
             {
-                systemInsights = await insightsResponse.Content.ReadFromJsonAsync<SystemInsights>();
+                _systemInsights = await insightsResponse.Content.ReadFromJsonAsync<SystemInsights>();
             }
 
             // Load alert effectiveness
-            var alertsResponse = await Http.GetAsync($"api/Analytics/alerts/effectiveness?days={selectedTimeRange}");
+            var alertsResponse = await Http.GetAsync($"api/Analytics/alerts/effectiveness?days={_selectedTimeRange}");
             if (alertsResponse.IsSuccessStatusCode)
             {
-                alertEffectiveness = await alertsResponse.Content.ReadFromJsonAsync<AlertEffectivenessReport>();
+                _alertEffectiveness = await alertsResponse.Content.ReadFromJsonAsync<AlertEffectivenessReport>();
             }
 
             // Load available services
             var servicesResponse = await Http.GetAsync("api/HealthCheckApi/services");
             if (servicesResponse.IsSuccessStatusCode)
             {
-                availableServices = await servicesResponse.Content.ReadFromJsonAsync<Service[]>();
+                _availableServices = await servicesResponse.Content.ReadFromJsonAsync<Service[]>();
                 
                 // Generate mock service metrics
-                serviceMetrics = availableServices?.Select(s => new ServiceMetric
+                _serviceMetrics = _availableServices?.Select(s => new ServiceMetric
                 {
                     ServiceId = s.Id,
                     ServiceName = s.Name,
@@ -496,7 +494,7 @@
             }
         };
 
-        await JSRuntime.InvokeVoidAsync("createTimeSeriesChart", "timeSeriesChart", chartData);
+        await JsRuntime.InvokeVoidAsync("createTimeSeriesChart", "timeSeriesChart", chartData);
     }
 
     private async Task InitializeHealthDistributionChart()
@@ -509,10 +507,10 @@
                 new
                 {
                     data = new[] { 
-                        systemInsights?.HealthOverview.StatusDistribution.Healthy ?? 0,
-                        systemInsights?.HealthOverview.StatusDistribution.Degraded ?? 0,
-                        systemInsights?.HealthOverview.StatusDistribution.Critical ?? 0,
-                        systemInsights?.HealthOverview.StatusDistribution.Unknown ?? 0
+                        _systemInsights?.HealthOverview.StatusDistribution.Healthy ?? 0,
+                        _systemInsights?.HealthOverview.StatusDistribution.Degraded ?? 0,
+                        _systemInsights?.HealthOverview.StatusDistribution.Critical ?? 0,
+                        _systemInsights?.HealthOverview.StatusDistribution.Unknown ?? 0
                     },
                     backgroundColor = new[] { "#10B981", "#F59E0B", "#EF4444", "#6B7280" },
                     borderWidth = 0
@@ -520,31 +518,31 @@
             }
         };
 
-        await JSRuntime.InvokeVoidAsync("createDoughnutChart", "healthDistributionChart", data);
+        await JsRuntime.InvokeVoidAsync("createDoughnutChart", "healthDistributionChart", data);
     }
 
     private async Task OnTimeRangeChanged(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var newRange))
         {
-            selectedTimeRange = newRange;
+            _selectedTimeRange = newRange;
             await RefreshAnalytics();
         }
     }
 
     private async Task OnServiceSelectionChanged(ChangeEventArgs e)
     {
-        selectedServiceId = e.Value?.ToString() ?? "";
+        _selectedServiceId = e.Value?.ToString() ?? "";
         await InitializeTimeSeriesChart(); // Refresh chart with service-specific data
     }
 
     private async Task RefreshAnalytics()
     {
-        isLoading = true;
+        _isLoading = true;
         StateHasChanged();
         await LoadAnalyticsData();
         await InitializeCharts();
-        isLoading = false;
+        _isLoading = false;
         StateHasChanged();
     }
 
@@ -600,13 +598,17 @@
     private string GetHeatmapColor(int day)
     {
         var intensity = Random.Shared.NextDouble();
-        return intensity switch
+        switch (intensity)
         {
-            < 0.25 => "bg-gray-200",
-            < 0.5 => "bg-blue-200",
-            < 0.75 => "bg-blue-400",
-            _ => "bg-blue-600"
-        };
+            case < 0.25:
+                return "bg-gray-200";
+            case < 0.5:
+                return "bg-blue-200";
+            case < 0.75:
+                return "bg-blue-400";
+            default:
+                return "bg-blue-600";
+        }
     }
 
     private string GetHeatmapTooltip(int day)
@@ -648,18 +650,5 @@
     private void AnalyzeService(string serviceId)
     {
         Navigation.NavigateTo($"/analytics/service/{serviceId}");
-    }
-
-    // Mock data classes
-    public class ServiceMetric
-    {
-        public string ServiceId { get; set; } = "";
-        public string ServiceName { get; set; } = "";
-        public string ServiceType { get; set; } = "";
-        public double Availability { get; set; }
-        public double AvgResponseTime { get; set; }
-        public double P95ResponseTime { get; set; }
-        public double ErrorRate { get; set; }
-        public double HealthScore { get; set; }
     }
 }

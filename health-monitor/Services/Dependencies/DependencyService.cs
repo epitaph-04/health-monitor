@@ -1,5 +1,4 @@
 using health_monitor.Models;
-using health_monitor.Client.Model;
 using System.Collections.Concurrent;
 
 namespace health_monitor.Services.Dependencies;

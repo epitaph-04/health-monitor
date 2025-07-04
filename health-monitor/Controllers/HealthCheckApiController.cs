@@ -4,7 +4,6 @@ using health_monitor.Services.Metrics;
 using health_monitor.Services.Alerting;
 using health_monitor.Services.Dependencies;
 using health_monitor.Models;
-using health_monitor.Client.Model;
 
 namespace health_monitor.Controllers;
 

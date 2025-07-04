@@ -2,10 +2,10 @@
 @page "/analytics/service/{ServiceId}"
 @using health_monitor.Models
 @inject HttpClient Http
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRuntime
 @inject NavigationManager Navigation
 
-<PageTitle>Service Details - @(service?.Name ?? "Loading...")</PageTitle>
+<PageTitle>Service Details - @(_service?.Name ?? "Loading...")</PageTitle>
 
 <div class="min-h-screen bg-gray-50">
     <!-- Header -->
@@ -16,7 +16,7 @@
                     <nav class="flex" aria-label="Breadcrumb">
                         <ol class="flex items-center space-x-4">
                             <li>
-                                <button @onclick="() => Navigation.NavigateTo('/analytics')" class="text-gray-500 hover:text-gray-700">
+                                <button @onclick="NavigateToAnalytics" class="text-gray-500 hover:text-gray-700">
                                     Analytics
                                 </button>
                             </li>
@@ -25,13 +25,13 @@
                                     <svg class="flex-shrink-0 h-5 w-5 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                         <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
                                     </svg>
-                                    <span class="ml-4 text-gray-700 font-medium">@(service?.Name ?? "Service")</span>
+                                    <span class="ml-4 text-gray-700 font-medium">@(_service?.Name ?? "Service")</span>
                                 </div>
                             </li>
                         </ol>
                     </nav>
                     <h1 class="text-3xl font-bold text-gray-900 mt-2">Service Analytics</h1>
-                    <p class="text-gray-600">Detailed performance and health analytics for @(service?.Name ?? "this service")</p>
+                    <p class="text-gray-600">Detailed performance and health analytics for @(_service?.Name ?? "this service")</p>
                 </div>
                 <div class="flex items-center space-x-4">
                     <button @onclick="RefreshData" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
@@ -46,13 +46,13 @@
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        @if (isLoading)
+        @if (_isLoading)
         {
             <div class="flex justify-center items-center h-64">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
         }
-        else if (service == null)
+        else if (_service == null)
         {
             <div class="text-center py-16">
                 <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -61,7 +61,7 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">Service Not Found</h3>
                 <p class="mt-1 text-sm text-gray-500">The requested service could not be found.</p>
                 <div class="mt-6">
-                    <button @onclick="() => Navigation.NavigateTo('/analytics')" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                    <button @onclick="NavigateToAnalytics" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                         Return to Analytics
                     </button>
                 </div>
@@ -80,7 +80,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Current Status</p>
-                            <p class="text-2xl font-bold @GetStatusColor(service.Status)">@service.Status</p>
+                            <p class="text-2xl font-bold @GetStatusColor(_service.LastCheckStatus.Status)">@_service.LastCheckStatus.Status</p>
                         </div>
                     </div>
                 </div>
@@ -94,8 +94,8 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Last Check</p>
-                            <p class="text-2xl font-bold text-gray-900">@service.LastChecked.ToString("HH:mm")</p>
-                            <p class="text-sm text-gray-500">@service.LastChecked.ToString("MMM dd")</p>
+                            <p class="text-2xl font-bold text-gray-900">@_service.LastCheckStatus.CheckTime.ToString("HH:mm")</p>
+                            <p class="text-sm text-gray-500">@_service.LastCheckStatus.CheckTime.ToString("MMM dd")</p>
                         </div>
                     </div>
                 </div>
@@ -109,7 +109,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Response Time</p>
-                            <p class="text-2xl font-bold text-gray-900">@(service.ResponseTime?.ToString("F0") ?? "N/A") ms</p>
+                            <p class="text-2xl font-bold text-gray-900">@(_service.LastCheckStatus.ResponseTime.ToString("F0")) ms</p>
                         </div>
                     </div>
                 </div>
@@ -124,7 +124,7 @@
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Service Type</p>
-                            <p class="text-2xl font-bold text-gray-900">@service.ServiceType</p>
+                            <p class="text-2xl font-bold text-gray-900">@_service.ServiceType</p>
                         </div>
                     </div>
                 </div>
@@ -162,27 +162,27 @@
                     <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Service Name</dt>
-                            <dd class="mt-1 text-sm text-gray-900">@service.Name</dd>
+                            <dd class="mt-1 text-sm text-gray-900">@_service.Name</dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Service Type</dt>
-                            <dd class="mt-1 text-sm text-gray-900">@service.ServiceType</dd>
+                            <dd class="mt-1 text-sm text-gray-900">@_service.ServiceType</dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Endpoint URL</dt>
-                            <dd class="mt-1 text-sm text-gray-900 font-mono">@service.Url</dd>
+                            <dd class="mt-1 text-sm text-gray-900 font-mono">@_service.Url</dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Check Interval</dt>
-                            <dd class="mt-1 text-sm text-gray-900">@service.CheckInterval seconds</dd>
+                            <dd class="mt-1 text-sm text-gray-900">30 seconds</dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Timeout</dt>
-                            <dd class="mt-1 text-sm text-gray-900">@service.Timeout seconds</dd>
+                            <dd class="mt-1 text-sm text-gray-900">5 seconds</dd>
                         </div>
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Last Update</dt>
-                            <dd class="mt-1 text-sm text-gray-900">@service.LastChecked.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+                            <dd class="mt-1 text-sm text-gray-900">@_service.LastCheckStatus.CheckTime.ToString("yyyy-MM-dd HH:mm:ss")</dd>
                         </div>
                     </dl>
                 </div>
@@ -194,8 +194,8 @@
 @code {
     [Parameter] public string ServiceId { get; set; } = "";
     
-    private bool isLoading = true;
-    private Service? service;
+    private bool _isLoading = true;
+    private Service? _service;
 
     protected override async Task OnInitializedAsync()
     {
@@ -203,22 +203,27 @@
         StateHasChanged();
         await Task.Delay(100); // Wait for DOM to render
         await InitializeCharts();
-        isLoading = false;
+        _isLoading = false;
     }
 
     protected override async Task OnParametersSetAsync()
     {
         if (!string.IsNullOrEmpty(ServiceId))
         {
-            isLoading = true;
+            _isLoading = true;
             await LoadServiceData();
-            if (service != null)
+            if (_service != null)
             {
                 await InitializeCharts();
             }
-            isLoading = false;
+            _isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private void NavigateToAnalytics()
+    {
+        Navigation.NavigateTo("/analytics");
     }
 
     private async Task LoadServiceData()
@@ -228,7 +233,7 @@
             var response = await Http.GetAsync($"api/HealthCheckApi/services/{ServiceId}");
             if (response.IsSuccessStatusCode)
             {
-                service = await response.Content.ReadFromJsonAsync<Service>();
+                _service = await response.Content.ReadFromJsonAsync<Service>();
             }
         }
         catch (Exception ex)
@@ -239,7 +244,7 @@
 
     private async Task InitializeCharts()
     {
-        if (service == null) return;
+        if (_service == null) return;
 
         await InitializeResponseTimeChart();
         await InitializeHealthScoreChart();
@@ -249,7 +254,7 @@
     {
         var labels = Enumerable.Range(0, 24).Select(i => $"{i:00}:00").ToArray();
         var responseTimeData = Enumerable.Range(0, 24)
-            .Select(i => (service?.ResponseTime ?? 100) + Random.Shared.NextDouble() * 50 - 25)
+            .Select(i => (_service?.LastCheckStatus.ResponseTime ?? 100) + Random.Shared.NextDouble() * 50 - 25)
             .ToArray();
 
         var chartData = new
@@ -269,7 +274,7 @@
             }
         };
 
-        await JSRuntime.InvokeVoidAsync("createAreaChart", "serviceResponseChart", chartData);
+        await JsRuntime.InvokeVoidAsync("createAreaChart", "serviceResponseChart", chartData);
     }
 
     private async Task InitializeHealthScoreChart()
@@ -296,29 +301,29 @@
             }
         };
 
-        await JSRuntime.InvokeVoidAsync("createAreaChart", "serviceHealthChart", chartData);
+        await JsRuntime.InvokeVoidAsync("createAreaChart", "serviceHealthChart", chartData);
     }
 
     private async Task RefreshData()
     {
-        isLoading = true;
+        _isLoading = true;
         StateHasChanged();
         await LoadServiceData();
-        if (service != null)
+        if (_service != null)
         {
             await InitializeCharts();
         }
-        isLoading = false;
+        _isLoading = false;
         StateHasChanged();
     }
 
-    private string GetStatusColor(ServiceStatus status)
+    private string GetStatusColor(Status status)
     {
         return status switch
         {
-            ServiceStatus.Healthy => "text-green-600",
-            ServiceStatus.Degraded => "text-yellow-600",
-            ServiceStatus.Critical => "text-red-600",
+            Status.Healthy => "text-green-600",
+            Status.Degraded => "text-yellow-600",
+            Status.Critical => "text-red-600",
             _ => "text-gray-600"
         };
     }

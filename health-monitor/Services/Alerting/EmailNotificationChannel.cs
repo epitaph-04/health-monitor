@@ -1,6 +1,6 @@
-using health_monitor.Models;
 using System.Net.Mail;
 using System.Net;
+using health_monitor.Models;
 
 namespace health_monitor.Services.Alerting;
 

@@ -1,5 +1,4 @@
 using health_monitor.Models;
-using health_monitor.Client.Model;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;

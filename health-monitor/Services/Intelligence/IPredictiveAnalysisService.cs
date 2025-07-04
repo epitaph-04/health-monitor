@@ -1,5 +1,4 @@
 using health_monitor.Models;
-using health_monitor.Client.Model;
 
 namespace health_monitor.Services.Intelligence;
 

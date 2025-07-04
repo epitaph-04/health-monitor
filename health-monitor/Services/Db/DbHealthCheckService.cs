@@ -1,7 +1,6 @@
 using health_monitor.Models;
 using System.Data.Common;
 using System.Diagnostics;
-using health_monitor.Client.Model;
 
 namespace health_monitor.Services;
 

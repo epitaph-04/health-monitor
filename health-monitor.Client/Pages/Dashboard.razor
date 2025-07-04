@@ -1,9 +1,9 @@
 @page "/dashboard"
-@using health_monitor.Client.Model
 @using health_monitor.Models
 @using Microsoft.AspNetCore.SignalR.Client
 @inject HttpClient Http
-@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
 @implements IAsyncDisposable
 
 <PageTitle>Health Monitor - Dashboard</PageTitle>
@@ -16,10 +16,10 @@
                 <h1 class="text-3xl font-bold text-gray-900">System Health Dashboard</h1>
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2">
-                        <div class="w-3 h-3 rounded-full @(isConnected ? "bg-green-400" : "bg-red-400")"></div>
-                        <span class="text-sm text-gray-600">@(isConnected ? "Connected" : "Disconnected")</span>
+                        <div class="w-3 h-3 rounded-full @(_isConnected ? "bg-green-400" : "bg-red-400")"></div>
+                        <span class="text-sm text-gray-600">@(_isConnected ? "Connected" : "Disconnected")</span>
                     </div>
-                    <span class="text-sm text-gray-500">Last updated: @lastUpdated.ToString("HH:mm:ss")</span>
+                    <span class="text-sm text-gray-500">Last updated: @_lastUpdated.ToString("HH:mm:ss")</span>
                 </div>
             </div>
         </div>
@@ -112,9 +112,9 @@
                         <h3 class="text-lg font-medium text-gray-900">Services Status</h3>
                     </div>
                     <div class="divide-y divide-gray-200">
-                        @if (services != null)
+                        @if (_services != null)
                         {
-                            @foreach (var service in services.Take(10))
+                            @foreach (var service in _services.Take(10))
                             {
                                 <div class="px-6 py-4 hover:bg-gray-50 cursor-pointer" @onclick="() => NavigateToService(service.Id)">
                                     <div class="flex items-center justify-between">
@@ -129,7 +129,7 @@
                                         </div>
                                         <div class="text-right">
                                             <p class="text-sm font-medium text-gray-900">@service.LastCheckStatus.ResponseTime ms</p>
-                                            <p class="text-sm text-gray-500">@service.LastCheckStatus.Time</p>
+                                            <p class="text-sm text-gray-500">@service.LastCheckStatus.CheckTime.ToShortTimeString()</p>
                                         </div>
                                     </div>
                                 </div>
@@ -153,15 +153,15 @@
                         <h3 class="text-lg font-medium text-gray-900">Quick Actions</h3>
                     </div>
                     <div class="px-6 py-4 space-y-3">
-                        <button @onclick="() => NavigateTo('/analytics')" 
+                        <button @onclick="NavigateToAnalytics" 
                                 class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                             View Analytics
                         </button>
-                        <button @onclick="() => NavigateTo('/alerts')" 
+                        <button @onclick="NavigateToAlerts" 
                                 class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                             Manage Alerts
                         </button>
-                        <button @onclick="() => NavigateTo('/dependencies')" 
+                        <button @onclick="NavigateToDependencies" 
                                 class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                             View Dependencies
                         </button>
@@ -214,10 +214,10 @@
 </div>
 
 @code {
-    private HubConnection? hubConnection;
-    private Service[]? services;
-    private bool isConnected = false;
-    private DateTime lastUpdated = DateTime.Now;
+    private HubConnection? _hubConnection;
+    private Service[]? _services;
+    private bool _isConnected = false;
+    private DateTime _lastUpdated = DateTime.Now;
     
     private int healthyCount = 0;
     private int degradedCount = 0;
@@ -241,7 +241,7 @@
             var response = await Http.GetAsync("api/HealthCheckApi/services");
             if (response.IsSuccessStatusCode)
             {
-                services = await response.Content.ReadFromJsonAsync<Service[]>();
+                _services = await response.Content.ReadFromJsonAsync<Service[]>();
                 UpdateHealthCounts();
             }
 
@@ -264,47 +264,47 @@
 
     private async Task SetupSignalRConnection()
     {
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/notification"))
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/notification"))
             .Build();
 
-        hubConnection.On<Service[]>("ReceiveAllNotification", (receivedServices) =>
+        _hubConnection.On<Service[]>("ReceiveAllNotification", (receivedServices) =>
         {
-            services = receivedServices;
+            _services = receivedServices;
             UpdateHealthCounts();
-            lastUpdated = DateTime.Now;
+            _lastUpdated = DateTime.Now;
             InvokeAsync(StateHasChanged);
         });
 
-        hubConnection.On<Service>("ReceiveNotification", (service) =>
+        _hubConnection.On<Service>("ReceiveNotification", (service) =>
         {
-            if (services != null)
+            if (_services != null)
             {
-                var index = Array.FindIndex(services, s => s.Id == service.Id);
+                var index = Array.FindIndex(_services, s => s.Id == service.Id);
                 if (index >= 0)
                 {
-                    services[index] = service;
+                    _services[index] = service;
                     UpdateHealthCounts();
-                    lastUpdated = DateTime.Now;
+                    _lastUpdated = DateTime.Now;
                     InvokeAsync(StateHasChanged);
                 }
             }
         });
 
-        await hubConnection.StartAsync();
-        isConnected = hubConnection.State == HubConnectionState.Connected;
+        await _hubConnection.StartAsync();
+        _isConnected = _hubConnection.State == HubConnectionState.Connected;
     }
 
     private void UpdateHealthCounts()
     {
-        if (services == null) return;
+        if (_services == null) return;
 
-        healthyCount = services.Count(s => s.LastCheckStatus.Status == Status.Healthy);
-        degradedCount = services.Count(s => s.LastCheckStatus.Status == Status.Degraded);
-        criticalCount = services.Count(s => s.LastCheckStatus.Status == Status.Critical);
-        unknownCount = services.Count(s => s.LastCheckStatus.Status == Status.Unknown);
+        healthyCount = _services.Count(s => s.LastCheckStatus.Status == Status.Healthy);
+        degradedCount = _services.Count(s => s.LastCheckStatus.Status == Status.Degraded);
+        criticalCount = _services.Count(s => s.LastCheckStatus.Status == Status.Critical);
+        unknownCount = _services.Count(s => s.LastCheckStatus.Status == Status.Unknown);
         
-        overallHealthScore = services.Length > 0 ? (double)healthyCount / services.Length * 100 : 0;
+        overallHealthScore = _services.Length > 0 ? (double)healthyCount / _services.Length * 100 : 0;
     }
 
     private async Task SetupHealthTrendChart()
@@ -327,7 +327,7 @@
             }
         };
 
-        await JSRuntime.InvokeVoidAsync("createHealthTrendChart", "healthTrendChart", chartData);
+        await JsRuntime.InvokeVoidAsync("createHealthTrendChart", "healthTrendChart", chartData);
     }
 
     private string GetStatusColor(Status status)
@@ -352,21 +352,31 @@
         };
     }
 
+    private void NavigateToAnalytics()
+    {
+        NavigationManager.NavigateTo("/analytics");
+    }
+    
+    private void NavigateToAlerts()
+    {
+        NavigationManager.NavigateTo("/alerts");
+    }
+
+    private void NavigateToDependencies()
+    {
+        NavigationManager.NavigateTo("/dependencies");
+    }
+    
     private void NavigateToService(string serviceId)
     {
-        Navigation.NavigateTo($"/services/{serviceId}");
+        NavigationManager.NavigateTo($"/services/{serviceId}");
     }
-
-    private void NavigateTo(string url)
-    {
-        Navigation.NavigateTo(url);
-    }
-
+    
     public async ValueTask DisposeAsync()
     {
-        if (hubConnection is not null)
+        if (_hubConnection is not null)
         {
-            await hubConnection.DisposeAsync();
+            await _hubConnection.DisposeAsync();
         }
     }
 

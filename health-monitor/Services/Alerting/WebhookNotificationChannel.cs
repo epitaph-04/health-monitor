@@ -1,6 +1,6 @@
-using health_monitor.Models;
 using System.Text;
 using System.Text.Json;
+using health_monitor.Models;
 
 namespace health_monitor.Services.Alerting;
 

@@ -1,5 +1,5 @@
 using health_monitor.Models;
-using health_monitor.Client.Model;
+using health_monitor.Services.Intelligence;
 
 namespace health_monitor.Services.Analytics;
 
@@ -63,17 +63,6 @@ public class PerformanceRegressionReport
     public string[] PossibleCauses { get; set; } = [];
 }
 
-public enum TimeSeriesMetric
-{
-    ResponseTime,
-    ErrorRate,
-    Availability,
-    Throughput,
-    CPUUsage,
-    MemoryUsage,
-    DiskUsage
-}
-
 public class DataPoint
 {
     public DateTime Timestamp { get; set; }
@@ -133,13 +122,4 @@ public class StatisticalSummary
     public double P99 { get; set; }
     public double Skewness { get; set; }
     public double Kurtosis { get; set; }
-}
-
-public enum TrendDirection
-{
-    Stable,
-    Increasing,
-    Decreasing,
-    Volatile,
-    Cyclical
 }

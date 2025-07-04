@@ -1,7 +1,6 @@
 using health_monitor.Models;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using health_monitor.Client.Model;
 
 namespace health_monitor.Services;
 

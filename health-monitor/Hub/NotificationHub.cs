@@ -1,4 +1,4 @@
-using health_monitor.Client.Model;
+using health_monitor.Models;
 using health_monitor.Services;
 using Microsoft.AspNetCore.SignalR;
 

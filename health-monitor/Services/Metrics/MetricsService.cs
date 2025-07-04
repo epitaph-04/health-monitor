@@ -1,6 +1,4 @@
 using health_monitor.Models;
-using health_monitor.Client.Model;
-using health_monitor.Services;
 
 namespace health_monitor.Services.Metrics;
 

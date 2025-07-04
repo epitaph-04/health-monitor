@@ -18,7 +18,7 @@ public class RecoveryService : IRecoveryService
 
     public async Task<bool> CanExecuteRecovery(string serviceId, HealthCheckResult result)
     {
-        if (result.Status != Client.Model.Status.Critical)
+        if (result.Status != Status.Critical)
         {
             return false;
         }

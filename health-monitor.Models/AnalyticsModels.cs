@@ -1,5 +1,25 @@
 namespace health_monitor.Models;
 
+public enum TimeSeriesMetric
+{
+    ResponseTime,
+    ErrorRate,
+    Availability,
+    Throughput,
+    CpuUsage,
+    MemoryUsage,
+    DiskUsage
+}
+
+public enum TrendDirection
+{
+    Stable,
+    Increasing,
+    Decreasing,
+    Volatile,
+    Cyclical
+}
+
 public class CorrelationMatrix
 {
     public string[] ServiceIds { get; set; } = [];
