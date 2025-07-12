@@ -1,0 +1,539 @@
+@page "/alerts"
+@using health_monitor.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Health Monitor - Manage Alerts</PageTitle>
+
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Alert Management</h1>
+                    <p class="mt-1 text-sm text-gray-500">Configure and manage alert rules for your services</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button @onclick="() => NavigationManager.NavigateTo("/dashboard")" 
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Dashboard
+                    </button>
+                    <button @onclick="() => NavigationManager.NavigateTo("/alerts/history")" 
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        View History
+                    </button>
+                    <button @onclick="ShowCreateModal" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add Alert Rule
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <AlertsNavigation />
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Alert Rules Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Rules</dt>
+                            <dd class="text-lg font-medium text-gray-900">@_alertRules.Count</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Active Rules</dt>
+                            <dd class="text-lg font-medium text-gray-900">@_alertRules.Count(r => r.IsEnabled)</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-100 rounded-md flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Critical Rules</dt>
+                            <dd class="text-lg font-medium text-gray-900">@_alertRules.Count(r => r.Level == AlertLevel.Critical)</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Rules Table -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-gray-900">Alert Rules</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm text-gray-600">Filter:</label>
+                            <select @bind="_filterLevel" @onchange="FilterRules" class="text-sm border-gray-300 rounded-md">
+                                <option value="">All Levels</option>
+                                <option value="@AlertLevel.Info">Info</option>
+                                <option value="@AlertLevel.Warning">Warning</option>
+                                <option value="@AlertLevel.Critical">Critical</option>
+                                <option value="@AlertLevel.Emergency">Emergency</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm text-gray-600">Status:</label>
+                            <select @bind="_filterStatus" @onchange="FilterRules" class="text-sm border-gray-300 rounded-md">
+                                <option value="">All</option>
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conditions</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Channels</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @if (_filteredRules.Any())
+                        {
+                            @foreach (var rule in _filteredRules)
+                            {
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">@rule.ServiceId</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @GetAlertLevelBadgeClass(rule.Level)">
+                                            @rule.Level
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div>@rule.ConsecutiveFailures consecutive failures</div>
+                                        <div class="text-gray-500">within @rule.Duration.TotalMinutes minutes</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        @if (rule.NotificationChannels.Any())
+                                        {
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach (var channel in rule.NotificationChannels)
+                                                {
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        @channel
+                                                    </span>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-gray-400">No channels</span>
+                                        }
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @(rule.IsEnabled ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800")">
+                                            @(rule.IsEnabled ? "Active" : "Inactive")
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex items-center space-x-2">
+                                            <button @onclick="() => EditRule(rule)" 
+                                                    class="text-blue-600 hover:text-blue-900">
+                                                Edit
+                                            </button>
+                                            <button @onclick="() => ToggleRuleStatus(rule)" 
+                                                    class="@(rule.IsEnabled ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900")">
+                                                @(rule.IsEnabled ? "Disable" : "Enable")
+                                            </button>
+                                            <button @onclick="() => DeleteRule(rule)" 
+                                                    class="text-red-600 hover:text-red-900">
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center">
+                                    <div class="text-gray-500">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <h3 class="mt-2 text-sm font-medium text-gray-900">No alert rules</h3>
+                                        <p class="mt-1 text-sm text-gray-500">Get started by creating your first alert rule.</p>
+                                        <div class="mt-6">
+                                            <button @onclick="ShowCreateModal" 
+                                                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                                Add Alert Rule
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Modal -->
+@if (_showModal)
+{
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseModal">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white" @onclick:stopPropagation="true">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        @(_editingRule == null ? "Create Alert Rule" : "Edit Alert Rule")
+                    </h3>
+                    <button @onclick="CloseModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Service Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Service</label>
+                        <select @bind="_currentRule.ServiceId" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select a service</option>
+                            @if (_services != null)
+                            {
+                                @foreach (var service in _services)
+                                {
+                                    <option value="@service.Id">@service.Name (@service.ServiceType)</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Alert Level -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Alert Level</label>
+                        <select @bind="_currentRule.Level" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="@AlertLevel.Info">Info</option>
+                            <option value="@AlertLevel.Warning">Warning</option>
+                            <option value="@AlertLevel.Critical">Critical</option>
+                            <option value="@AlertLevel.Emergency">Emergency</option>
+                        </select>
+                    </div>
+
+                    <!-- Consecutive Failures -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Consecutive Failures</label>
+                        <input type="number" @bind="_currentRule.ConsecutiveFailures" min="1" max="10" 
+                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                        <p class="mt-1 text-sm text-gray-500">Number of consecutive failures before triggering alert</p>
+                    </div>
+
+                    <!-- Duration -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Time Window (minutes)</label>
+                        <input type="number" @bind="durationMinutes" min="1" max="1440" 
+                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                        <p class="mt-1 text-sm text-gray-500">Time window to consider for consecutive failures</p>
+                    </div>
+
+                    <!-- Notification Channels -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Notification Channels</label>
+                        <div class="mt-2 space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" @bind="emailEnabled" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span class="ml-2 text-sm text-gray-700">Email</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" @bind="webhookEnabled" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span class="ml-2 text-sm text-gray-700">Webhook</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Enabled Status -->
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" @bind="_currentRule.IsEnabled" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                            <span class="ml-2 text-sm text-gray-700">Enable this alert rule</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button @onclick="CloseModal" 
+                            class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button @onclick="SaveRule" 
+                            class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        @(_editingRule == null ? "Create" : "Update")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<AlertRule> _alertRules = new();
+    private List<AlertRule> _filteredRules = new();
+    private List<Service>? _services;
+    private bool _showModal = false;
+    private AlertRule? _editingRule = null;
+    private AlertRule _currentRule = new();
+    private AlertLevel? _filterLevel = null;
+    private string _filterStatus = "";
+    private bool emailEnabled = false;
+    private bool webhookEnabled = false;
+    private int durationMinutes = 5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            // Load alert rules
+            var rulesResponse = await Http.GetAsync(NavigationManager.ToAbsoluteUri("/api/HealthCheckApi/alerts/rules"));
+            if (rulesResponse.IsSuccessStatusCode)
+            {
+                _alertRules = (await rulesResponse.Content.ReadFromJsonAsync<AlertRule[]>())?.ToList() ?? new();
+                _filteredRules = _alertRules;
+            }
+
+            // Load services
+            var servicesResponse = await Http.GetAsync(NavigationManager.ToAbsoluteUri("/api/HealthCheckApi/services"));
+            if (servicesResponse.IsSuccessStatusCode)
+            {
+                _services = await servicesResponse.Content.ReadFromJsonAsync<Service[]>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        _editingRule = null;
+        _currentRule = new AlertRule
+        {
+            Id = Guid.NewGuid().ToString(),
+            IsEnabled = true,
+            ConsecutiveFailures = 1,
+            Duration = TimeSpan.FromMinutes(5),
+            NotificationChannels = new string[0],
+            Metadata = new Dictionary<string, string>()
+        };
+        emailEnabled = false;
+        webhookEnabled = false;
+        durationMinutes = 5;
+        _showModal = true;
+    }
+
+    private void EditRule(AlertRule rule)
+    {
+        _editingRule = rule;
+        _currentRule = new AlertRule
+        {
+            Id = rule.Id,
+            ServiceId = rule.ServiceId,
+            Level = rule.Level,
+            ConsecutiveFailures = rule.ConsecutiveFailures,
+            Duration = rule.Duration,
+            NotificationChannels = rule.NotificationChannels,
+            IsEnabled = rule.IsEnabled,
+            Metadata = rule.Metadata
+        };
+        emailEnabled = rule.NotificationChannels.Contains("email");
+        webhookEnabled = rule.NotificationChannels.Contains("webhook");
+        durationMinutes = (int)rule.Duration.TotalMinutes;
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _editingRule = null;
+    }
+
+    private async Task SaveRule()
+    {
+        try
+        {
+            // Update notification channels
+            var channels = new List<string>();
+            if (emailEnabled) channels.Add("email");
+            if (webhookEnabled) channels.Add("webhook");
+            _currentRule.NotificationChannels = channels.ToArray();
+            _currentRule.Duration = TimeSpan.FromMinutes(durationMinutes);
+
+            if (_editingRule == null)
+            {
+                // Create new rule
+                _alertRules.Add(_currentRule);
+            }
+            else
+            {
+                // Update existing rule
+                var index = _alertRules.FindIndex(r => r.Id == _editingRule.Id);
+                if (index >= 0)
+                {
+                    _alertRules[index] = _currentRule;
+                }
+            }
+
+            // Save to backend
+            var response = await Http.PostAsJsonAsync(
+                NavigationManager.ToAbsoluteUri("/api/HealthCheckApi/alerts/rules"), 
+                _alertRules.ToArray());
+
+            if (response.IsSuccessStatusCode)
+            {
+                _filteredRules = _alertRules;
+                CloseModal();
+            }
+            else
+            {
+                Console.WriteLine($"Error saving alert rules: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving rule: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleRuleStatus(AlertRule rule)
+    {
+        try
+        {
+            rule.IsEnabled = !rule.IsEnabled;
+            
+            var response = await Http.PostAsJsonAsync(
+                NavigationManager.ToAbsoluteUri("/api/HealthCheckApi/alerts/rules"), 
+                _alertRules.ToArray());
+
+            if (response.IsSuccessStatusCode)
+            {
+                _filteredRules = _alertRules;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling rule status: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteRule(AlertRule rule)
+    {
+        try
+        {
+            _alertRules.Remove(rule);
+            
+            var response = await Http.PostAsJsonAsync(
+                NavigationManager.ToAbsoluteUri("/api/HealthCheckApi/alerts/rules"), 
+                _alertRules.ToArray());
+
+            if (response.IsSuccessStatusCode)
+            {
+                _filteredRules = _alertRules;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting rule: {ex.Message}");
+        }
+    }
+
+    private void FilterRules()
+    {
+        _filteredRules = _alertRules.Where(rule =>
+        {
+            if (_filterLevel.HasValue && rule.Level != _filterLevel.Value)
+                return false;
+            
+            if (!string.IsNullOrEmpty(_filterStatus))
+            {
+                bool statusFilter = bool.Parse(_filterStatus);
+                if (rule.IsEnabled != statusFilter)
+                    return false;
+            }
+            
+            return true;
+        }).ToList();
+    }
+
+    private string GetAlertLevelBadgeClass(AlertLevel level)
+    {
+        return level switch
+        {
+            AlertLevel.Info => "bg-blue-100 text-blue-800",
+            AlertLevel.Warning => "bg-yellow-100 text-yellow-800",
+            AlertLevel.Critical => "bg-red-100 text-red-800",
+            AlertLevel.Emergency => "bg-purple-100 text-purple-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
+}

@@ -1,0 +1,26 @@
+@using health_monitor.Models
+
+<div class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav class="flex space-x-8" aria-label="Alerts Navigation">
+            <a href="/alerts" 
+               class="@(IsActive("/alerts") ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Alert Rules
+            </a>
+            <a href="/alerts/history" 
+               class="@(IsActive("/alerts/history") ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Alert History
+            </a>
+        </nav>
+    </div>
+</div>
+
+@code {
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+
+    private bool IsActive(string path)
+    {
+        var currentPath = NavigationManager.Uri;
+        return currentPath.Contains(path);
+    }
+}
