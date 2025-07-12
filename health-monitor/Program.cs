@@ -201,6 +201,13 @@ analyticsApi.MapGet("/insights", async (
     var insights = await analyticsService.GenerateSystemInsights(TimeSpan.FromDays(days));
     return TypedResults.Ok(insights);
 });
+
+analyticsApi.MapGet("/health-trend", async (
+    IAdvancedAnalyticsService analyticsService, [FromQuery] int days = 7) => 
+{
+    var trend = await analyticsService.GenerateHealthTrend(TimeSpan.FromDays(days));
+    return TypedResults.Ok(trend);
+});
 analyticsApi.MapPost("/custom", async (
     IAdvancedAnalyticsService analyticsService, [FromBody]CustomAnalyticsQuery query) => 
 {

@@ -202,10 +202,29 @@
                 <!-- System Health Trend -->
                 <div class="bg-white shadow rounded-lg">
                     <div class="px-6 py-4 border-b border-gray-200">
-                        <h3 class="text-lg font-medium text-gray-900">Health Trend</h3>
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-medium text-gray-900">Health Trend</h3>
+                            <button @onclick="RefreshHealthTrend" 
+                                    class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
                     </div>
                     <div class="px-6 py-4">
-                        <canvas id="healthTrendChart" width="300" height="200"></canvas>
+                        @if (_isLoadingTrend)
+                        {
+                            <div class="flex items-center justify-center h-48">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span class="ml-2 text-sm text-gray-500">Loading trend data...</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <canvas id="healthTrendChart" width="300" height="200"></canvas>
+                        }
                     </div>
                 </div>
             </div>
@@ -223,6 +242,7 @@
     private int _degradedCount;
     private int _criticalCount;
     private double _overallHealthScore;
+    private bool _isLoadingTrend = true;
     
     private List<AlertInfo> _recentAlerts = new();
     protected override async Task OnInitializedAsync()
@@ -248,7 +268,7 @@
             }
 
             // Load system insights
-            var insightsResponse = await Http.GetAsync(NavigationManager.ToAbsoluteUri("/api/Analytics/insights?days=1"));
+            var insightsResponse = await Http.GetAsync(NavigationManager.ToAbsoluteUri("/api/AnalyticsApi/insights?days=1"));
             if (insightsResponse.IsSuccessStatusCode)
             {
                 var insights = await insightsResponse.Content.ReadFromJsonAsync<SystemInsights>();
@@ -275,7 +295,11 @@
             _services = receivedServices;
             UpdateHealthCounts();
             _lastUpdated = DateTime.Now;
-            InvokeAsync(StateHasChanged);
+            InvokeAsync(async () => 
+            {
+                StateHasChanged();
+                await SetupHealthTrendChart();
+            });
         });
 
         _hubConnection.On<Service>("ReceiveNotification", (service) =>
@@ -288,7 +312,11 @@
                     _services[index] = service;
                     UpdateHealthCounts();
                     _lastUpdated = DateTime.Now;
-                    InvokeAsync(StateHasChanged);
+                    InvokeAsync(async () => 
+                    {
+                        StateHasChanged();
+                        await SetupHealthTrendChart();
+                    });
                 }
             }
         });
@@ -310,9 +338,53 @@
 
     private async Task SetupHealthTrendChart()
     {
+        _isLoadingTrend = true;
+        StateHasChanged();
+        
         await Task.Delay(500);
         
-        var chartData = new
+        try
+        {
+            // Load health trend data
+            var trendResponse = await Http.GetAsync(NavigationManager.ToAbsoluteUri("/api/AnalyticsApi/health-trend?days=7"));
+            if (trendResponse.IsSuccessStatusCode)
+            {
+                var trendData = await trendResponse.Content.ReadFromJsonAsync<HealthTrendData>();
+                if (trendData?.DataPoints != null && trendData.DataPoints.Any())
+                {
+                    var labels = trendData.DataPoints.Select(p => p.Timestamp.ToString("HH:mm")).ToArray();
+                    var data = trendData.DataPoints.Select(p => p.HealthScore).ToArray();
+                    
+                    var chartData = new
+                    {
+                        labels = labels,
+                        datasets = new[]
+                        {
+                            new
+                            {
+                                label = "Health Score",
+                                data = data,
+                                borderColor = "rgb(59, 130, 246)",
+                                backgroundColor = "rgba(59, 130, 246, 0.1)",
+                                tension = 0.4
+                            }
+                        }
+                    };
+
+                    await JsRuntime.InvokeVoidAsync("createHealthTrendChart", "healthTrendChart", chartData);
+                    _isLoadingTrend = false;
+                    StateHasChanged();
+                    return;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading health trend data: {ex.Message}");
+        }
+        
+        // Fallback to current health score if API fails
+        var fallbackData = new
         {
             labels = new[] { "6h ago", "5h ago", "4h ago", "3h ago", "2h ago", "1h ago", "Now" },
             datasets = new[]
@@ -328,7 +400,9 @@
             }
         };
 
-        await JsRuntime.InvokeVoidAsync("createHealthTrendChart", "healthTrendChart", chartData);
+        await JsRuntime.InvokeVoidAsync("createHealthTrendChart", "healthTrendChart", fallbackData);
+        _isLoadingTrend = false;
+        StateHasChanged();
     }
 
     private string GetStatusColor(Status status)
@@ -371,6 +445,11 @@
     private void NavigateToService(string serviceId)
     {
         NavigationManager.NavigateTo($"/services/{serviceId}");
+    }
+
+    private async Task RefreshHealthTrend()
+    {
+        await SetupHealthTrendChart();
     }
     
     public async ValueTask DisposeAsync()
