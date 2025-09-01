@@ -1,0 +1,505 @@
+@page "/alerts/history"
+@using health_monitor.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Health Monitor - Alerts History</PageTitle>
+
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Alerts History</h1>
+                    <p class="mt-1 text-sm text-gray-500">View past alerts and their effectiveness</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button @onclick="NavigateToAlert" 
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Alerts
+                    </button>
+                    <button @onclick="ExportData" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <AlertsNavigation />
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Alerts Effectiveness Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Total Alerts</dt>
+                            <dd class="text-lg font-medium text-gray-900">@(_effectivenessReport?.Overall?.TotalAlerts ?? 0)</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-green-100 rounded-md flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Response Rate</dt>
+                            <dd class="text-lg font-medium text-gray-900">@(_effectivenessReport?.Overall?.F1Score.ToString("F1") ?? "0")%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-yellow-100 rounded-md flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Avg Response Time</dt>
+                            <dd class="text-lg font-medium text-gray-900">@(_effectivenessReport?.Overall?.AverageResponseTime.ToString()) min</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">False Positives</dt>
+                            <dd class="text-lg font-medium text-gray-900">@(_effectivenessReport?.Overall?.FalsePositives.ToString("F1") ?? "0")%</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Controls -->
+        <div class="bg-white shadow rounded-lg mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                    <h3 class="text-lg font-medium text-gray-900">Alerts History</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm text-gray-600">Time Period:</label>
+                            <select @bind="_selectedPeriod" class="text-sm border-gray-300 rounded-md">
+                                <option value="7">Last 7 days</option>
+                                <option value="30">Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                                <option value="365">Last year</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm text-gray-600">Level:</label>
+                            <select @bind="_filterLevel" class="text-sm border-gray-300 rounded-md">
+                                <option value="">All Levels</option>
+                                <option value="@AlertLevel.Info">Info</option>
+                                <option value="@AlertLevel.Warning">Warning</option>
+                                <option value="@AlertLevel.Critical">Critical</option>
+                                <option value="@AlertLevel.Emergency">Emergency</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm text-gray-600">Service:</label>
+                            <select @bind="_filterService" class="text-sm border-gray-300 rounded-md">
+                                <option value="">All Services</option>
+                                @if (_services != null)
+                                {
+                                    @foreach (var service in _services)
+                                    {
+                                        <option value="@service.Id">@service.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Timeline -->
+        <div class="bg-white shadow rounded-lg mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Alerts Timeline</h3>
+            </div>
+            <div class="p-6">
+                <canvas id="alertsTimelineChart" width="800" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- Alerts List -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Recent Alerts</h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response Time</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @if (_filteredAlerts.Any())
+                        {
+                            @foreach (var alert in _filteredAlerts)
+                            {
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        @alert.Timestamp.ToString("MMM dd, HH:mm")
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">@alert.ServiceId</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @GetAlertLevelBadgeClass(alert.Level)">
+                                            @alert.Level
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">
+                                        <div class="max-w-xs truncate">@alert.Message</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium @GetAlertStatusBadgeClass(alert.Status)">
+                                            @alert.Status
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        @if (alert.ResponseTime.HasValue)
+                                        {
+                                            @alert.ResponseTime.Value.ToString("F1")
+                                        }
+                                        else
+                                        {
+                                            <span class="text-gray-400">-</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center">
+                                    <div class="text-gray-500">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <h3 class="mt-2 text-sm font-medium text-gray-900">No alerts found</h3>
+                                        <p class="mt-1 text-sm text-gray-500">No alerts match your current filters.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        @if (_effectivenessReport?.Recommendations?.Any() == true)
+        {
+            <div class="bg-white shadow rounded-lg mt-8">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Recommendations</h3>
+                </div>
+                <div class="px-6 py-4">
+                    <ul class="space-y-3">
+                        @foreach (var recommendation in _effectivenessReport.Recommendations)
+                        {
+                            <li class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-5 h-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-gray-700">@recommendation</p>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private AlertEffectivenessReport? _effectivenessReport;
+    private List<AlertHistoryItem> _alerts = new();
+    private List<AlertHistoryItem> _filteredAlerts = new();
+    private List<Service>? _services;
+    private int _selectedPeriod = 30;
+    private AlertLevel? _filterLevel = null;
+    private string _filterService = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await SetupAlertsTimelineChart();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            // Load effectiveness report
+            var effectivenessResponse = await Http.GetAsync(
+                NavigationManager.ToAbsoluteUri($"/api/AnalyticsApi/alerts/effectiveness?days={_selectedPeriod}"));
+            if (effectivenessResponse.IsSuccessStatusCode)
+            {
+                _effectivenessReport = await effectivenessResponse.Content.ReadFromJsonAsync<AlertEffectivenessReport>();
+            }
+
+            // Load services
+            var servicesResponse = await Http.GetAsync(NavigationManager.ToAbsoluteUri("/api/HealthCheckApi/services"));
+            if (servicesResponse.IsSuccessStatusCode)
+            {
+                _services = await servicesResponse.Content.ReadFromJsonAsync<List<Service>>();
+            }
+
+            // Load sample alerts (in a real app, this would come from an API)
+            await LoadSampleAlerts();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadSampleAlerts()
+    {
+        // Generate sample alert history data
+        var random = new Random();
+        var services = _services ?? new List<Service>();
+        var alertLevels = new[] { AlertLevel.Info, AlertLevel.Warning, AlertLevel.Critical, AlertLevel.Emergency };
+        var statuses = new[] { "Resolved", "Acknowledged", "Open", "Escalated" };
+        var messages = new[]
+        {
+            "Service response time exceeded threshold",
+            "Database connection failed",
+            "High CPU usage detected",
+            "Memory usage above 90%",
+            "Network latency spike",
+            "Service unavailable",
+            "Authentication failure",
+            "Disk space running low"
+        };
+
+        _alerts = new List<AlertHistoryItem>();
+        var endDate = DateTime.UtcNow;
+        var startDate = endDate.AddDays(-_selectedPeriod);
+
+        for (int i = 0; i < 50; i++)
+        {
+            var timestamp = startDate.AddDays(random.NextDouble() * _selectedPeriod);
+            var service = services.Any() ? services[random.Next(services.Count)] : null;
+            
+            _alerts.Add(new AlertHistoryItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                ServiceId = service?.Name ?? $"service-{random.Next(1, 10)}",
+                Level = alertLevels[random.Next(alertLevels.Length)],
+                Message = messages[random.Next(messages.Length)],
+                Timestamp = timestamp,
+                Status = statuses[random.Next(statuses.Length)],
+                ResponseTime = random.Next(100) > 30 ? TimeSpan.FromMinutes(random.Next(1, 60)) : null
+            });
+        }
+
+        _alerts = _alerts.OrderByDescending(a => a.Timestamp).ToList();
+        _filteredAlerts = _alerts;
+    }
+
+    private void FilterAlerts()
+    {
+        _filteredAlerts = _alerts.Where(alert =>
+        {
+            if (_filterLevel.HasValue && alert.Level != _filterLevel.Value)
+                return false;
+            
+            if (!string.IsNullOrEmpty(_filterService) && alert.ServiceId != _filterService)
+                return false;
+            
+            return true;
+        }).ToList();
+    }
+
+    private async Task SetupAlertsTimelineChart()
+    {
+        await Task.Delay(500);
+        
+        // Group alerts by day and level
+        var alertsByDay = _alerts
+            .GroupBy(a => a.Timestamp.Date)
+            .OrderBy(g => g.Key)
+            .Select(g => new
+            {
+                Date = g.Key.ToString("MMM dd"),
+                Info = g.Count(a => a.Level == AlertLevel.Info),
+                Warning = g.Count(a => a.Level == AlertLevel.Warning),
+                Critical = g.Count(a => a.Level == AlertLevel.Critical),
+                Emergency = g.Count(a => a.Level == AlertLevel.Emergency)
+            })
+            .Take(14) // Last 14 days
+            .ToList();
+
+        var chartData = new
+        {
+            labels = alertsByDay.Select(x => x.Date).ToArray(),
+            datasets = new[]
+            {
+                new
+                {
+                    label = "Info",
+                    data = alertsByDay.Select(x => x.Info).ToArray(),
+                    borderColor = "rgb(59, 130, 246)",
+                    backgroundColor = "rgba(59, 130, 246, 0.1)",
+                    tension = 0.4
+                },
+                new
+                {
+                    label = "Warning",
+                    data = alertsByDay.Select(x => x.Warning).ToArray(),
+                    borderColor = "rgb(245, 158, 11)",
+                    backgroundColor = "rgba(245, 158, 11, 0.1)",
+                    tension = 0.4
+                },
+                new
+                {
+                    label = "Critical",
+                    data = alertsByDay.Select(x => x.Critical).ToArray(),
+                    borderColor = "rgb(239, 68, 68)",
+                    backgroundColor = "rgba(239, 68, 68, 0.1)",
+                    tension = 0.4
+                },
+                new
+                {
+                    label = "Emergency",
+                    data = alertsByDay.Select(x => x.Emergency).ToArray(),
+                    borderColor = "rgb(147, 51, 234)",
+                    backgroundColor = "rgba(147, 51, 234, 0.1)",
+                    tension = 0.4
+                }
+            }
+        };
+
+        await JsRuntime.InvokeVoidAsync("createAlertsTimelineChart", "alertsTimelineChart", chartData);
+    }
+
+    private async Task ExportData()
+    {
+        try
+        {
+            var exportRequest = new DataExportRequest
+            {
+                Format = ExportFormat.CSV
+            };
+
+            var response = await Http.PostAsJsonAsync(
+                NavigationManager.ToAbsoluteUri("/api/AnalyticsApi/export"), 
+                exportRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var fileName = $"alerts-history-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
+                await JsRuntime.InvokeVoidAsync("downloadFile", fileName, await response.Content.ReadAsByteArrayAsync());
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting data: {ex.Message}");
+        }
+    }
+
+    private string GetAlertLevelBadgeClass(AlertLevel level)
+    {
+        return level switch
+        {
+            AlertLevel.Info => "bg-blue-100 text-blue-800",
+            AlertLevel.Warning => "bg-yellow-100 text-yellow-800",
+            AlertLevel.Critical => "bg-red-100 text-red-800",
+            AlertLevel.Emergency => "bg-purple-100 text-purple-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
+
+    private string GetAlertStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Resolved" => "bg-green-100 text-green-800",
+            "Acknowledged" => "bg-blue-100 text-blue-800",
+            "Open" => "bg-yellow-100 text-yellow-800",
+            "Escalated" => "bg-red-100 text-red-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
+    
+    private void NavigateToAlert() => NavigationManager.NavigateTo("/alerts");
+
+    public class AlertHistoryItem
+    {
+        public string Id { get; set; } = "";
+        public string ServiceId { get; set; } = "";
+        public AlertLevel Level { get; set; }
+        public string Message { get; set; } = "";
+        public DateTime Timestamp { get; set; }
+        public string Status { get; set; } = "";
+        public TimeSpan? ResponseTime { get; set; }
+    }
+}

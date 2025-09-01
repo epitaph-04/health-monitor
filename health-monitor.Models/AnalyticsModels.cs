@@ -469,3 +469,25 @@ public class SeasonalPattern
     public double Confidence { get; set; }
     public string Description { get; set; } = null!;
 }
+
+public class HealthTrendData
+{
+    public TimeSpan Period { get; set; }
+    public HealthTrendPoint[] DataPoints { get; set; } = [];
+    public double CurrentHealthScore { get; set; }
+    public double AverageHealthScore { get; set; }
+    public TrendDirection Trend { get; set; }
+    public double TrendStrength { get; set; }
+    public string[] ImprovingServices { get; set; } = [];
+    public string[] DegradingServices { get; set; } = [];
+}
+
+public class HealthTrendPoint
+{
+    public DateTime Timestamp { get; set; }
+    public double HealthScore { get; set; }
+    public int HealthyServices { get; set; }
+    public int DegradedServices { get; set; }
+    public int CriticalServices { get; set; }
+    public int TotalServices { get; set; }
+}

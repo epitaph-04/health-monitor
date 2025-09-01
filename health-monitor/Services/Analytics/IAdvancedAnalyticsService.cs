@@ -12,6 +12,7 @@ public interface IAdvancedAnalyticsService
     Task<ServiceBenchmark> BenchmarkService(string serviceId, string[] compareServiceIds, TimeSpan period);
     Task<AlertEffectivenessReport> AnalyzeAlertEffectiveness(TimeSpan period);
     Task<SystemInsights> GenerateSystemInsights(TimeSpan period);
+    Task<HealthTrendData> GenerateHealthTrend(TimeSpan period);
     Task<CustomAnalyticsReport> RunCustomAnalysis(CustomAnalyticsQuery query);
     Task<DataExport> ExportData(DataExportRequest request);
 }

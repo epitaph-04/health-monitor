@@ -631,6 +631,172 @@ window.initializeTooltips = function() {
     });
 };
 
+// Health trend chart function
+window.createHealthTrendChart = function(canvasId, data) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    if (window.chartInstances[canvasId]) {
+        window.chartInstances[canvasId].destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    window.chartInstances[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#374151',
+                    borderWidth: 1,
+                    cornerRadius: 6,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    grid: {
+                        color: 'rgba(156, 163, 175, 0.1)'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Health Score (%)'
+                    },
+                    grid: {
+                        color: 'rgba(156, 163, 175, 0.1)'
+                    },
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.4
+                },
+                point: {
+                    radius: 3,
+                    hoverRadius: 6
+                }
+            }
+        }
+    });
+};
+
+// Alerts timeline chart function
+window.createAlertsTimelineChart = function(canvasId, data) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    if (window.chartInstances[canvasId]) {
+        window.chartInstances[canvasId].destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    window.chartInstances[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#374151',
+                    borderWidth: 1,
+                    cornerRadius: 6,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y} alerts`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    grid: {
+                        color: 'rgba(156, 163, 175, 0.1)'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Alerts'
+                    },
+                    grid: {
+                        color: 'rgba(156, 163, 175, 0.1)'
+                    },
+                    beginAtZero: true
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.4
+                },
+                point: {
+                    radius: 3,
+                    hoverRadius: 6
+                }
+            }
+        }
+    });
+};
+
+// File download function
+window.downloadFile = function(filename, data) {
+    const blob = new Blob([data], { type: 'application/octet-stream' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+};
+
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', window.initializeTooltips);
 } else {
